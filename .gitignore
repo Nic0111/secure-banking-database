@@ -1,0 +1,27 @@
+# Local credentials and SQLCMD overrides
+.env
+.env.*
+!.env.example
+config/local.*
+*.sqlcmdvars
+
+# Generated evidence and database artifacts
+evidence/
+*.bak
+*.trn
+*.dif
+*.sqlaudit
+*.cer
+*.pvk
+
+# Document build intermediates
+tmp/
+docs/rendered/
+docs/*.pdf
+~$*.docx
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
+
