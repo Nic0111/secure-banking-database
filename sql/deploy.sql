@@ -19,6 +19,7 @@
 :setvar DemoTransactionPin "482731"
 
 PRINT N'=== SmartBank secure database deployment ===';
+:r sql/reset.sql
 :r sql/implementation/00_environment.sql
 :r sql/implementation/01_schema.sql
 :r sql/implementation/02_cryptography.sql

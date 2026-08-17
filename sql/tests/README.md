@@ -1,20 +1,40 @@
-# Security validation
+```bash
+SB_SERVER='100.100.101.10,1433'
 
-Run each role script in a fresh connection using the login named at the top of the file. This is important: `EXECUTE AS USER` is not an adequate substitute for testing SQL authentication, native login audit, dynamic masking, or `ORIGINAL_LOGIN()`-based identity mapping.
+run_test() {
+  echo "\n===== $3 as $1 ====="
+  sqlcmd -S "$SB_SERVER" -U "$1" -P "$2" -C -i "$3"
+  return 0
+}
 
-Recommended order:
+# Baseline and confidentiality
+run_test sa 'user@123' sql/tests/00_admin_validation.sql
+run_test sa 'user@123' sql/tests/01_confidentiality/01_authentication_assertions.sql
+run_test sb_customer_amelia 'SBank!Customer_2026#Amelia' sql/tests/01_confidentiality/02_staff_directory_assertions.sql
+run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/01_confidentiality/03_manager_access_assertions.sql
+run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/01_confidentiality/03_manager_access_assertions.sql
+run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/01_confidentiality/04_officer_access_assertions.sql
+run_test sb_officer_priya 'SBank!Officer_2026#Priya' sql/tests/01_confidentiality/04_officer_access_assertions.sql
+run_test sb_dba_aisha 'SBank!Dba_2026#Aisha' sql/tests/01_confidentiality/05_dba_access_assertions.sql
+run_test sb_customer_amelia 'SBank!Customer_2026#Amelia' sql/tests/01_confidentiality/06_customer_isolation_assertions.sql
+run_test sb_customer_hafiz 'SBank!Customer_2026#Hafiz' sql/tests/01_confidentiality/06_customer_isolation_assertions.sql
 
-1. `00_admin_validation.sql` as `sa`
-2. `01_dba.sql` as `sb_dba_aisha`
-3. `02_manager.sql` as `sb_manager_daniel`
-4. `02_manager.sql` again as `sb_manager_siti`
-5. `03_officer.sql` as `sb_officer_farid`
-6. `03_officer.sql` again as `sb_officer_priya`
-7. `04_customer_amelia.sql` as `sb_customer_amelia`
-8. `05_customer_hafiz.sql` as `sb_customer_hafiz`
-9. `06_auditor.sql` as `sb_auditor_noor`
-10. `07_post_test_audit.sql` as `sa` or the auditor
+# Integrity
+run_test sb_dba_aisha 'SBank!Dba_2026#Aisha' sql/tests/02_integrity/01_dba_ddl_assertions.sql
+run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/02_integrity/02_manager_staff_assertions.sql
+run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/02_integrity/02_manager_staff_assertions.sql
+run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/02_integrity/03_officer_account_assertions.sql
+run_test sb_officer_priya 'SBank!Officer_2026#Priya' sql/tests/02_integrity/03_officer_account_assertions.sql
+run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/02_integrity/04_own_record_assertions.sql
+run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/02_integrity/04_own_record_assertions.sql
+run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/02_integrity/04_own_record_assertions.sql
+run_test sb_officer_priya 'SBank!Officer_2026#Priya' sql/tests/02_integrity/04_own_record_assertions.sql
+run_test sb_customer_amelia 'SBank!Customer_2026#Amelia' sql/tests/02_integrity/05_transaction_assertions.sql
+run_test sb_customer_hafiz 'SBank!Customer_2026#Hafiz' sql/tests/02_integrity/05_transaction_assertions.sql
+run_test sb_auditor_noor 'SBank!Auditor_2026#Noor' sql/tests/02_integrity/06_audit_assertions.sql
 
-Every SQL login has a distinct demonstration password. The login-to-variable mapping is declared at the top of `sql/deploy.sql`; do not substitute one officer's or customer's password for another login.
-
-Statements labelled **EXPECTED DENIAL** or **EXPECTED VALIDATION FAILURE** must fail. These failures are passing security results, not test failures. Execute statements individually during the lecturer demonstration so each permission boundary is visible and independently audited.
+# Availability
+run_test sa 'user@123' sql/tests/03_availability/01_backup_assertions.sql
+run_test sa 'user@123' sql/tests/03_availability/02_rpo_assertions.sql
+run_test sa 'user@123' sql/tests/03_availability/03_recovery_assertions.sql
+```

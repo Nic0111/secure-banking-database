@@ -998,7 +998,7 @@ def build_report():
     add_table(doc, "Table 19. Consolidated verification results", ["Test group", "Acceptance condition", "Result"], tests, [2150, 5710, 1500], 8.1)
     add_body(
         doc,
-        "The retained pre-extension validation output was ALL 11 VALIDATION GROUPS PASSED and reported 6 staff, 12 customers, 18 accounts, 50 transactions, active RLS policies and two ONLINE validation databases: SmartBankDB_RestoreValidation and SmartBankDB_PITR. The second-manager extension adds Siti Aminah as staff S00007 and requires a fresh authenticated run of sql/tests/02_manager.sql as both managers before the final evidence snapshot is presented.",
+        "The retained pre-extension validation output was ALL 11 VALIDATION GROUPS PASSED and reported 6 staff, 12 customers, 18 accounts, 50 transactions, active RLS policies and two ONLINE validation databases: SmartBankDB_RestoreValidation and SmartBankDB_PITR. The second-manager extension adds Siti Aminah as staff S00007 and requires a fresh authenticated run of sql/tests/02_integrity/02_manager_staff_assertions.sql as both managers before the final evidence snapshot is presented.",
     )
 
     doc.add_heading("Security Evaluation and Limitations", level=1)

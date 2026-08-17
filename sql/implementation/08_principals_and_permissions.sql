@@ -25,7 +25,7 @@ FETCH NEXT FROM login_cursor INTO @LoginName, @LoginPassword;
 WHILE @@FETCH_STATUS = 0
 BEGIN
     IF SUSER_ID(@LoginName) IS NULL
-       OR PWDCOMPARE(@LoginPassword, LOGINPROPERTY(@LoginName, 'PasswordHash')) = 0
+       OR PWDCOMPARE(@LoginPassword, CONVERT(varbinary(256), LOGINPROPERTY(@LoginName, 'PasswordHash'))) = 0
     BEGIN
         SET @CreateLoginSql = CASE WHEN SUSER_ID(@LoginName) IS NULL THEN N'CREATE' ELSE N'ALTER' END +
             N' LOGIN ' + QUOTENAME(@LoginName) +

@@ -33,8 +33,9 @@ SQL Server Express is intentionally unsupported because it has no SQL Server Age
 ## Repository layout
 
 ```text
-sql/deploy.sql                 SQLCMD deployment orchestrator
-sql/00-10_*.sql               Ordered implementation scripts
+sql/deploy.sql                 Reset-and-deploy SQLCMD orchestrator
+sql/reset.sql                  Drops SmartBank databases, Agent jobs, logins, and backup history
+sql/implementation/00-10_*.sql Ordered implementation scripts
 sql/tests/                     Role and security verification
 sql/demo/                      Lecturer demonstration sequence
 sql/recovery/                  Encrypted restore and point-in-time recovery
@@ -44,6 +45,8 @@ docs/                          Final report and supporting matrices
 ## Deployment
 
 Run from the repository root. The coursework paths and demonstration credentials are declared at the top of `sql/deploy.sql`.
+
+Every deployment first runs `sql/reset.sql`. This permanently removes the SmartBank databases, recovery copies, Agent jobs, demonstration logins, and SmartBank's `msdb` backup history before rebuilding the current version. It preserves the server certificates, server audit, and backup history for other databases.
 
 ```bash
 sqlcmd -S <server> -U sa -P '<sa-password>' -C -b -i sql/deploy.sql
