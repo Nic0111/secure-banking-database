@@ -6,9 +6,12 @@ REQUIREMENT:
 1. Accidental changes must be recoverable.
 
 RUN AS:
-sa, after completing the point-in-time workflow in sql/recovery:
-02_capture_pitr_marker.sql, the lecturer's accidental deletion,
-03_capture_post_change_log.sql and 04_restore_point_in_time.sql.
+sa, after completing the controlled point-in-time workflow:
+sql/recovery/scenarios/01_pitr_capture_marker.sql,
+the lecturer's accidental deletion,
+sql/recovery/scenarios/02_pitr_capture_post_change_log.sql,
+sql/recovery/operations/02_restore_point_in_time.sql, and
+sql/recovery/validation/02_validate_pitr_restore.sql.
 
 EXPECTED RESULT:
 The live database differs from the saved marker, while SmartBankDB_PITR exactly
@@ -38,12 +41,13 @@ SELECT TOP (1)
        @MarkerTimeServer = MarkerTimeServer,
        @ExpectedRowsJson = ExpectedRecoveryRows
 FROM ops.RecoveryMarker
+WHERE MarkerLabel LIKE N'PITR:%'
 ORDER BY CreatedAt DESC;
 
 IF @MarkerID IS NULL
 BEGIN
     SELECT N'NOT READY' AS Result,
-           N'Run sql/recovery/02_capture_pitr_marker.sql before the accidental-change scenario.' AS NextAction;
+           N'Run sql/recovery/scenarios/01_pitr_capture_marker.sql before the accidental-change scenario.' AS NextAction;
     THROW 51301, 'No point-in-time recovery marker exists.', 1;
 END;
 
@@ -105,7 +109,7 @@ END;
 IF DB_ID(N'SmartBankDB_PITR') IS NULL
 BEGIN
     SELECT N'NOT READY' AS Result,
-           N'Run sql/recovery/03_capture_post_change_log.sql and 04_restore_point_in_time.sql.' AS NextAction;
+           N'Run sql/recovery/scenarios/02_pitr_capture_post_change_log.sql, sql/recovery/operations/02_restore_point_in_time.sql, and sql/recovery/validation/02_validate_pitr_restore.sql.' AS NextAction;
     THROW 51303, 'SmartBankDB_PITR does not exist.', 1;
 END;
 

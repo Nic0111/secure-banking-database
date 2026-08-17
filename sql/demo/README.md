@@ -20,7 +20,7 @@ Expected permission errors are part of the evidence. The scripts catch expected 
 | 2 | `01_confidentiality` in numeric order | The login named in each header | Read-only |
 | 3 | `02_integrity` in numeric order | The login named in each header | Controlled demo changes; some are restored in-script |
 | 4 | `02_integrity/06_all_valid_invalid_manipulations_logged.sql` | `sb_auditor_noor` | Read-only |
-| 5 | `03_availability` in numeric order | `sa` | Read-only evidence; recovery operations remain in `sql/recovery` |
+| 5 | Complete the applicable workflow in `sql/recovery/README.md`, then run `03_availability` in numeric order | `sa` | Recovery is performed and validated in `sql/recovery`; the demo scripts present condensed evidence |
 | 6 | `90_permission_change_extension.sql` | `sa` | Reversible user/role/permission change |
 | 7 | `99_consolidated_evidence.sql` | `sa` | Read-only |
 

@@ -174,11 +174,13 @@ ORDER BY job.name, scheduleInfo.name;
 SELECT databaseInfo.name AS ValidationDatabase, databaseInfo.state_desc AS StateDescription
 FROM sys.databases AS databaseInfo
 WHERE databaseInfo.name IN
-      (N'SmartBankDB_RestoreValidation', N'SmartBankDB_RestoreDemo', N'SmartBankDB_PITR')
+      (N'SmartBankDB_RestoreDemo', N'SmartBankDB_PITR')
 ORDER BY databaseInfo.name;
 
 SELECT TOP (5) MarkerID, MarkerTimeUtc, MarkerTimeServer, MarkerLabel, CreatedBy, CreatedAt
-FROM ops.RecoveryMarker ORDER BY CreatedAt DESC;
+FROM ops.RecoveryMarker
+WHERE MarkerLabel LIKE N'PITR:%'
+ORDER BY CreatedAt DESC;
 
 IF DB_ID(N'SmartBankDB_PITR') IS NOT NULL
 BEGIN
@@ -192,5 +194,5 @@ BEGIN
 END
 ELSE
     SELECT N'PENDING' AS RecoveryEvidence,
-           N'Run the controlled sql/recovery workflow before capturing PITR comparison evidence.' AS NextAction;
+           N'Follow sql/recovery/README.md: run the point-in-time scenario, operation, and validation scripts before capturing PITR comparison evidence.' AS NextAction;
 GO
