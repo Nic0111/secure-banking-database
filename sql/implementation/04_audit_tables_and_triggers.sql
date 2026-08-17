@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Create storage for data-change audit records.
 IF OBJECT_ID(N'audit.DmlAudit', N'U') IS NULL
 BEGIN
     CREATE TABLE audit.DmlAudit
@@ -62,6 +63,7 @@ BEGIN
 END;
 GO
 
+-- Record application-level events.
 CREATE OR ALTER PROCEDURE audit.usp_LogApplicationEvent
     @EventType varchar(40),
     @OperationName sysname,
@@ -91,6 +93,7 @@ BEGIN
 END;
 GO
 
+-- Prevent audit records from being changed or removed.
 CREATE OR ALTER TRIGGER audit.trg_DmlAudit_Immutable
 ON audit.DmlAudit
 INSTEAD OF UPDATE, DELETE
@@ -105,6 +108,7 @@ AS
     THROW 50101, 'Application audit records are immutable.', 1;
 GO
 
+-- Audit changes to core banking records.
 CREATE OR ALTER TRIGGER core.trg_Staff_DmlAudit
 ON core.Staff
 AFTER INSERT, UPDATE, DELETE
@@ -200,6 +204,7 @@ BEGIN
 END;
 GO
 
+-- Keep transaction records append-only.
 CREATE OR ALTER TRIGGER core.trg_TransactionRecord_Immutable
 ON core.TransactionRecord
 INSTEAD OF UPDATE, DELETE
@@ -207,6 +212,7 @@ AS
     THROW 50102, 'Transaction records are append-only. Corrections must use a compensating transaction.', 1;
 GO
 
+-- Audit identity, PIN, and recovery-target changes.
 CREATE OR ALTER TRIGGER sec.trg_PrincipalMap_DmlAudit
 ON sec.PrincipalMap
 AFTER INSERT, UPDATE, DELETE
@@ -264,6 +270,7 @@ BEGIN
 END;
 GO
 
+-- Expose a readable audit view.
 CREATE OR ALTER VIEW audit.vw_DmlAudit
 AS
     SELECT AuditID, EventTime, ActionType, SchemaName, TableName, AffectedRowCount,

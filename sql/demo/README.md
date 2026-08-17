@@ -3,7 +3,7 @@
 Open one SSMS/Azure Data Studio connection per login. Execute each statement individually so the result and corresponding audit event are easy to explain.
 
 1. As `sa`, run `01_security_inventory.sql` to show all users, roles, explicit grants/denies, RLS predicates, DDM rules, encryption status, and job schedules.
-2. Connect as the DBA, manager, two officers, and two customers. Use the matching scripts in `../tests/` to prove each allowed and denied action.
+2. Connect as the DBA, both managers, both officers, and both customers. Use the matching scripts in `../tests/` to prove each allowed action, denial, validation failure, and peer-manager isolation boundary.
 3. Attempt one invalid password login and retain the error. SQL Server Audit records it through `FAILED_LOGIN_GROUP`.
 4. Run `02_audit_evidence.sql` as `sa` or the auditor to correlate login/logout, DML, DDL, procedure, and permission events.
 5. Run `03_backup_evidence.sql` after at least three consecutive days. It proves full/differential/log frequency, AES-256 encryption, checksums, verification, and job success.

@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Seed the branch directory.
 IF NOT EXISTS (SELECT 1 FROM core.Branch)
 BEGIN
     INSERT core.Branch (BranchID, BranchName, City)
@@ -14,6 +15,7 @@ BEGIN
 END;
 GO
 
+-- Seed staff and employment records.
 IF NOT EXISTS (SELECT 1 FROM core.Staff)
 BEGIN
     OPEN SYMMETRIC KEY SmartBank_Column_Key DECRYPTION BY CERTIFICATE SmartBank_Column_Certificate;
@@ -24,7 +26,8 @@ BEGIN
            ('S00003', N'Farid Iskandar', '012-3101003'),
            ('S00004', N'Priya Nair', '012-3101004'),
            ('S00005', N'Lim Jia Wei', '012-3101005'),
-           ('S00006', N'Nur Iman', '012-3101006');
+           ('S00006', N'Nur Iman', '012-3101006'),
+           ('S00007', N'Siti Aminah', '012-3101007');
 
     INSERT core.StaffEmployment (StaffID, Position, BranchID, SalaryCipher)
     VALUES
@@ -33,12 +36,14 @@ BEGIN
       ('S00003', 'BANK_OFFICER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5200.00')),
       ('S00004', 'BANK_OFFICER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5400.00')),
       ('S00005', 'BANK_OFFICER', 'B0003', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5100.00')),
-      ('S00006', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00'));
+      ('S00006', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00')),
+      ('S00007', 'BANK_MANAGER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '10900.00'));
 
     CLOSE SYMMETRIC KEY SmartBank_Column_Key;
 END;
 GO
 
+-- Seed customer records.
 IF NOT EXISTS (SELECT 1 FROM core.Customer)
 BEGIN
     OPEN SYMMETRIC KEY SmartBank_Column_Key DECRYPTION BY CERTIFICATE SmartBank_Column_Certificate;
@@ -99,6 +104,7 @@ BEGIN
 END;
 GO
 
+-- Seed customer accounts.
 IF NOT EXISTS (SELECT 1 FROM core.Account)
 BEGIN
     INSERT core.Account (AccountID, CustomerID, AccountType)
@@ -123,10 +129,12 @@ BEGIN
 END;
 GO
 
+-- Map the demonstration logins to their identities.
 MERGE sec.PrincipalMap AS target
 USING (VALUES
     (CONVERT(sysname, N'sb_dba_aisha'), CONVERT(sysname, N'sb_dba_aisha'), 'DBA', 'S00001', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_manager_daniel'), CONVERT(sysname, N'sb_manager_daniel'), 'MANAGER', 'S00002', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_manager_siti'), CONVERT(sysname, N'sb_manager_siti'), 'MANAGER', 'S00007', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_officer_farid'), CONVERT(sysname, N'sb_officer_farid'), 'OFFICER', 'S00003', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_officer_priya'), CONVERT(sysname, N'sb_officer_priya'), 'OFFICER', 'S00004', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_customer_amelia'), CONVERT(sysname, N'sb_customer_amelia'), 'CUSTOMER', CONVERT(char(6), NULL), 'C00001'),
@@ -140,6 +148,7 @@ WHEN NOT MATCHED THEN INSERT (LoginName, DatabaseUserName, UserType, StaffID, Cu
 VALUES (source.LoginName, source.DatabaseUserName, source.UserType, source.StaffID, source.CustomerID);
 GO
 
+-- Seed the demonstration transaction PINs.
 IF NOT EXISTS (SELECT 1 FROM sec.TransactionCredential)
 BEGIN
     DECLARE @Pin varchar(12) = '$(DemoTransactionPin)';
@@ -152,6 +161,7 @@ BEGIN
 END;
 GO
 
+-- Seed a small transaction history and hash chain.
 IF NOT EXISTS (SELECT 1 FROM core.TransactionRecord)
 BEGIN
     DECLARE @SeedAccounts table
@@ -251,6 +261,7 @@ BEGIN
 END;
 GO
 
+-- Seed a recovery record for the restore demonstration.
 IF NOT EXISTS (SELECT 1 FROM demo.RecoveryTarget)
 BEGIN
     INSERT demo.RecoveryTarget (RecoveryID, EvidenceText)

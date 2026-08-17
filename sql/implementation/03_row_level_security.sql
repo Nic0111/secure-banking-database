@@ -3,6 +3,7 @@ GO
 SET NOCOUNT ON;
 GO
 
+-- Create the staff-employment access predicate.
 IF OBJECT_ID(N'sec.fn_StaffEmploymentAccess', N'IF') IS NULL
 BEGIN
     EXEC(N'
@@ -35,6 +36,7 @@ BEGIN
 END;
 GO
 
+-- Create the customer-data access predicate.
 IF OBJECT_ID(N'sec.fn_CustomerAccess', N'IF') IS NULL
 BEGIN
     EXEC(N'
@@ -66,6 +68,7 @@ BEGIN
 END;
 GO
 
+-- Apply the row-level security policies.
 IF NOT EXISTS (SELECT 1 FROM sys.security_policies WHERE name = N'StaffEmploymentSecurityPolicy')
 BEGIN
     CREATE SECURITY POLICY sec.StaffEmploymentSecurityPolicy

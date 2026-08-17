@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Create tables for backup and recovery evidence.
 IF OBJECT_ID(N'ops.BackupRun', N'U') IS NULL
 BEGIN
     CREATE TABLE ops.BackupRun
@@ -44,6 +45,7 @@ IF COL_LENGTH(N'ops.RecoveryMarker', N'MarkerTimeServer') IS NULL
     ALTER TABLE ops.RecoveryMarker ADD MarkerTimeServer datetime2(3) NULL;
 GO
 
+-- Run and verify an encrypted backup.
 CREATE OR ALTER PROCEDURE ops.usp_RunBackup
     @BackupType char(1)
 AS
@@ -96,6 +98,7 @@ BEGIN
 END;
 GO
 
+-- Report recent backup health.
 CREATE OR ALTER PROCEDURE ops.usp_BackupHealth
     @Days int = 3
 WITH EXECUTE AS OWNER
@@ -143,6 +146,7 @@ BEGIN
 END;
 GO
 
+-- Remove expired backup files and history.
 CREATE OR ALTER PROCEDURE ops.usp_PruneBackupFiles
 AS
 BEGIN
@@ -167,6 +171,7 @@ IF NOT EXISTS
     EXEC ops.usp_RunBackup @BackupType = 'F';
 GO
 
+-- Enable SQL Server Agent features.
 USE [master];
 GO
 EXEC sys.sp_configure N'show advanced options', 1;
@@ -175,6 +180,7 @@ EXEC sys.sp_configure N'Agent XPs', 1;
 RECONFIGURE;
 GO
 
+-- Configure SQL Agent history and schedules.
 USE [msdb];
 GO
 -- The five-minute log job produces two history rows per run. Retain enough
@@ -186,6 +192,7 @@ GO
 
 DECLARE @Today int = CONVERT(int, CONVERT(char(8), GETDATE(), 112));
 
+-- Create the backup and retention jobs.
 IF NOT EXISTS (SELECT 1 FROM dbo.sysjobs WHERE name = N'SmartBank - Full Backup')
 BEGIN
     EXEC dbo.sp_add_job @job_name = N'SmartBank - Full Backup', @enabled = 1,
@@ -236,7 +243,7 @@ BEGIN
     EXEC dbo.sp_add_jobserver @job_name = N'SmartBank - Backup Retention';
 END;
 
--- Keep existing job IDs so redeployment preserves the three-day execution history.
+-- Keep existing job history, then enable and validate every backup job.
 EXEC dbo.sp_update_job @job_name = N'SmartBank - Full Backup', @enabled = 1;
 EXEC dbo.sp_update_job @job_name = N'SmartBank - Differential Backup', @enabled = 1;
 EXEC dbo.sp_update_job @job_name = N'SmartBank - Log Backup', @enabled = 1;
@@ -247,7 +254,12 @@ IF EXISTS
     SELECT 1
     FROM dbo.sysjobs AS job
     WHERE job.name IN
-          (N'SmartBank - Full Backup', N'SmartBank - Differential Backup', N'SmartBank - Log Backup', N'SmartBank - Backup Retention')
+    (
+        N'SmartBank - Full Backup',
+        N'SmartBank - Differential Backup',
+        N'SmartBank - Log Backup',
+        N'SmartBank - Backup Retention'
+    )
       AND
       (
           job.enabled = 0
@@ -261,5 +273,6 @@ GO
 
 USE [$(DatabaseName)];
 GO
+-- Let the auditor read backup health.
 GRANT EXECUTE ON OBJECT::ops.usp_BackupHealth TO rl_security_auditor;
 GO

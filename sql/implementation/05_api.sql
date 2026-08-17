@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Append a transaction and extend the tamper-evident hash chain.
 CREATE OR ALTER PROCEDURE core.usp_AppendLedgerEntry
     @CorrelationID uniqueidentifier,
     @CustomerID char(6),
@@ -66,6 +67,7 @@ BEGIN
 END;
 GO
 
+-- Provide read-only directory and account views.
 CREATE OR ALTER VIEW api.vw_StaffDirectory
 AS
     SELECT StaffID, StaffName, Phone
@@ -100,6 +102,7 @@ AS
     FROM core.TransactionRecord;
 GO
 
+-- Return the current user's staff or customer profile.
 CREATE OR ALTER PROCEDURE api.usp_GetMyStaffProfile
 WITH EXECUTE AS OWNER
 AS
@@ -129,6 +132,7 @@ BEGIN
 END;
 GO
 
+-- Let managers view the staff they supervise.
 CREATE OR ALTER PROCEDURE api.usp_ManagerGetStaffProfiles
 WITH EXECUTE AS OWNER
 AS
@@ -186,6 +190,7 @@ BEGIN
 END;
 GO
 
+-- Let staff update their own contact details.
 CREATE OR ALTER PROCEDURE api.usp_UpdateOwnStaffProfile
     @StaffName nvarchar(100),
     @Phone varchar(20)
@@ -228,6 +233,7 @@ BEGIN
 END;
 GO
 
+-- Let managers add, update, and deactivate officers.
 CREATE OR ALTER PROCEDURE api.usp_ManagerAddOfficer
     @StaffID char(6),
     @StaffName nvarchar(100),
@@ -369,6 +375,7 @@ BEGIN
 END;
 GO
 
+-- Let officers create customers and manage accounts.
 CREATE OR ALTER PROCEDURE api.usp_OfficerCreateCustomer
     @CustomerID char(6),
     @CustomerName nvarchar(100),
@@ -497,6 +504,7 @@ BEGIN
 END;
 GO
 
+-- Let customers set their transaction PIN.
 CREATE OR ALTER PROCEDURE api.usp_SetTransactionPin
     @CurrentPin varchar(12) = NULL,
     @NewPin varchar(12)
@@ -547,6 +555,7 @@ BEGIN
 END;
 GO
 
+-- Process customer deposits, withdrawals, and transfers.
 CREATE OR ALTER PROCEDURE api.usp_PerformTransaction
     @TransactionType varchar(10),
     @SourceAccountID varchar(10),
@@ -697,6 +706,7 @@ BEGIN
 END;
 GO
 
+-- Verify the transaction hash chain and account balances.
 CREATE OR ALTER PROCEDURE api.usp_VerifyLedgerChain
 WITH EXECUTE AS OWNER
 AS

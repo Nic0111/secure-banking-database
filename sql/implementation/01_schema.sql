@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Create branch and staff tables.
 IF OBJECT_ID(N'core.Branch', N'U') IS NULL
 BEGIN
     CREATE TABLE core.Branch
@@ -57,6 +58,7 @@ BEGIN
 END;
 GO
 
+-- Create customer and account tables.
 IF OBJECT_ID(N'core.Customer', N'U') IS NULL
 BEGIN
     CREATE TABLE core.Customer
@@ -107,6 +109,7 @@ BEGIN
 END;
 GO
 
+-- Create the append-only transaction ledger.
 IF OBJECT_ID(N'core.TransactionRecord', N'U') IS NULL
 BEGIN
     CREATE TABLE core.TransactionRecord
@@ -151,6 +154,7 @@ BEGIN
 END;
 GO
 
+-- Map logins to their staff or customer identities.
 IF OBJECT_ID(N'sec.PrincipalMap', N'U') IS NULL
 BEGIN
     CREATE TABLE sec.PrincipalMap
@@ -177,6 +181,7 @@ BEGIN
 END;
 GO
 
+-- Store transaction PIN hashes and lockout state.
 IF OBJECT_ID(N'sec.TransactionCredential', N'U') IS NULL
 BEGIN
     CREATE TABLE sec.TransactionCredential
@@ -193,6 +198,7 @@ BEGIN
 END;
 GO
 
+-- Create operational and recovery support tables.
 IF OBJECT_ID(N'ops.LedgerChain', N'U') IS NULL
 BEGIN
     CREATE TABLE ops.LedgerChain

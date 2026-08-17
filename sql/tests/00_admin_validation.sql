@@ -10,7 +10,7 @@ IF (SELECT recovery_model_desc FROM sys.databases WHERE name = DB_NAME()) <> 'FU
     THROW 51000, 'FAIL: SmartBankDB is not using FULL recovery.', 1;
 IF NOT EXISTS (SELECT 1 FROM sys.dm_database_encryption_keys WHERE database_id = DB_ID() AND encryption_state = 3 AND key_length = 256)
     THROW 51001, 'FAIL: SmartBankDB TDE is not fully encrypted with AES-256.', 1;
-IF (SELECT COUNT(*) FROM core.Staff) < 6 THROW 51002, 'FAIL: insufficient staff seed data.', 1;
+IF (SELECT COUNT(*) FROM core.Staff) < 7 THROW 51002, 'FAIL: insufficient staff seed data.', 1;
 IF (SELECT COUNT(*) FROM core.Customer) < 12 THROW 51003, 'FAIL: insufficient customer seed data.', 1;
 IF (SELECT COUNT(*) FROM core.Account) < 18 THROW 51004, 'FAIL: insufficient account seed data.', 1;
 IF (SELECT COUNT(*) FROM core.TransactionRecord) < 40 THROW 51005, 'FAIL: insufficient transaction seed data.', 1;
@@ -20,12 +20,50 @@ IF NOT EXISTS (SELECT 1 FROM sys.database_audit_specifications WHERE name = N'Sm
     THROW 51008, 'FAIL: database audit specification is not enabled.', 1;
 IF NOT EXISTS (SELECT 1 FROM msdb.dbo.backupset WHERE database_name = DB_NAME() AND type = 'D' AND key_algorithm = 'AES_256' AND has_backup_checksums = 1)
     THROW 51009, 'FAIL: no encrypted, checksummed full backup is registered.', 1;
+IF (SELECT COUNT(*) FROM sys.sql_logins WHERE name IN
+    (N'sb_dba_aisha', N'sb_manager_daniel', N'sb_manager_siti', N'sb_officer_farid',
+     N'sb_officer_priya', N'sb_customer_amelia', N'sb_customer_hafiz', N'sb_auditor_noor')) <> 8
+    THROW 51011, 'FAIL: one or more demonstration SQL logins are missing.', 1;
+IF EXISTS
+(
+    SELECT 1
+    FROM sys.sql_logins
+    WHERE name IN
+        (N'sb_dba_aisha', N'sb_manager_daniel', N'sb_manager_siti', N'sb_officer_farid',
+         N'sb_officer_priya', N'sb_customer_amelia', N'sb_customer_hafiz', N'sb_auditor_noor')
+      AND is_policy_checked = 0
+)
+    THROW 51012, 'FAIL: password policy is disabled for a demonstration login.', 1;
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sec.PrincipalMap
+    WHERE LoginName = N'sb_manager_siti'
+      AND DatabaseUserName = N'sb_manager_siti'
+      AND UserType = 'MANAGER'
+      AND StaffID = 'S00007'
+      AND IsActive = 1
+)
+    THROW 51013, 'FAIL: the second manager identity mapping is missing or inactive.', 1;
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.database_role_members
+    WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_manager')
+      AND member_principal_id = USER_ID(N'sb_manager_siti')
+)
+    THROW 51014, 'FAIL: the second manager is not assigned to rl_manager.', 1;
 
 SELECT N'PASS - baseline deployment' AS Result,
        (SELECT COUNT(*) FROM core.Staff) AS StaffRows,
        (SELECT COUNT(*) FROM core.Customer) AS CustomerRows,
        (SELECT COUNT(*) FROM core.Account) AS AccountRows,
        (SELECT COUNT(*) FROM core.TransactionRecord) AS TransactionRows;
+
+SELECT name AS LoginName, is_policy_checked, is_expiration_checked, default_database_name
+FROM sys.sql_logins
+WHERE name LIKE N'sb[_]%'
+ORDER BY name;
 
 SELECT databaseName = DB_NAME(database_id), encryption_state_desc, key_algorithm, key_length, percent_complete
 FROM sys.dm_database_encryption_keys WHERE database_id = DB_ID();
@@ -75,4 +113,3 @@ LEFT JOIN dbo.sysschedules AS schedule ON schedule.schedule_id = jobSchedule.sch
 WHERE job.name LIKE N'SmartBank - %'
 ORDER BY job.name;
 GO
-

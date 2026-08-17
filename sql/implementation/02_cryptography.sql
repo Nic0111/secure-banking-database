@@ -4,6 +4,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Create the database key and certificate for column encryption.
 IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = N'##MS_DatabaseMasterKey##')
 BEGIN
     DECLARE @CreateMasterKey nvarchar(max) =
@@ -25,6 +26,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = N'SmartBank_Column_
         ENCRYPTION BY CERTIFICATE SmartBank_Column_Certificate;
 GO
 
+-- Export the database key and certificate once for recovery.
 DECLARE @CertificateDirectory nvarchar(4000) = N'$(CertificateDirectory)';
 DECLARE @Separator nchar(1) = N'$(PathSeparator)';
 DECLARE @Password nvarchar(4000) = N'$(CertificateBackupPassword)';
@@ -53,4 +55,3 @@ BEGIN
     EXEC sys.sp_executesql @Sql;
 END;
 GO
-

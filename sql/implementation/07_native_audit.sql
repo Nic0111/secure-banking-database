@@ -3,6 +3,7 @@ GO
 SET NOCOUNT ON;
 GO
 
+-- Create the server audit and its event groups.
 IF NOT EXISTS (SELECT 1 FROM sys.server_audits WHERE name = N'SmartBank_ServerAudit')
 BEGIN
     DECLARE @CreateAuditSql nvarchar(max) =
@@ -38,6 +39,7 @@ GO
 ALTER SERVER AUDIT SmartBank_ServerAudit WITH (STATE = ON);
 GO
 
+-- Configure the database audit specification.
 USE [$(DatabaseName)];
 GO
 IF EXISTS (SELECT 1 FROM sys.database_audit_specifications WHERE name = N'SmartBank_DatabaseAuditSpecification')
@@ -61,6 +63,7 @@ FOR SERVER AUDIT SmartBank_ServerAudit
 WITH (STATE = ON);
 GO
 
+-- Read the SQL Server audit files.
 CREATE OR ALTER PROCEDURE audit.usp_ReadNativeAudit
     @StartTime datetime2(3) = NULL,
     @EndTime datetime2(3) = NULL,
@@ -98,6 +101,7 @@ BEGIN
 END;
 GO
 
+-- Summarize the configured audit coverage.
 CREATE OR ALTER VIEW audit.vw_AuditMatrix
 AS
     SELECT *

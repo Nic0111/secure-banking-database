@@ -4,7 +4,7 @@ This repository contains the complete Microsoft SQL Server implementation and re
 
 ## What is implemented
 
-- SQL authentication with password policy and separate database users
+- SQL authentication with password policy, a distinct password per login, and separate database users
 - Least-privilege RBAC for DBA, bank manager, bank officer, customer, and auditor roles
 - Row-level security for staff employment data, customer records, accounts, and transactions
 - Restricted views and stored procedures with no direct business-table DML for ordinary users
@@ -43,28 +43,16 @@ docs/                          Final report and supporting matrices
 
 ## Deployment
 
-Run from the repository root. Supply secrets at execution time; never commit them.
+Run from the repository root. The coursework paths and demonstration credentials are declared at the top of `sql/deploy.sql`.
 
 ```bash
-sqlcmd -S <server> -U sa -P '<sa-password>' -C -b -i sql/deploy.sql \
-  -v BackupDirectory='<server-backup-path>' \
-     AuditDirectory='<server-audit-path>' \
-     CertificateDirectory='<server-certificate-path>' \
-     PathSeparator='/' \
-     MasterKeyPassword='<strong-master-key-password>' \
-     CertificateBackupPassword='<strong-certificate-password>' \
-     DbaLoginPassword='<strong-dba-password>' \
-     ManagerLoginPassword='<strong-manager-password>' \
-     OfficerLoginPassword='<strong-officer-password>' \
-     CustomerLoginPassword='<strong-customer-password>' \
-     AuditorLoginPassword='<strong-auditor-password>' \
-     DemoTransactionPin='<six-digit-pin>'
+sqlcmd -S <server> -U sa -P '<sa-password>' -C -b -i sql/deploy.sql
 ```
 
-Use `PathSeparator='\'` and Windows paths when SQL Server runs on Windows. Paths are resolved on the database server, not on the client Mac. For the supplied instance, suitable locations are children of `C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER02\MSSQL\Backup`.
+For a different SQL Server instance, update the three directories and `PathSeparator` in `sql/deploy.sql`. Paths are resolved on the database server, not on the client Mac.
 
 After deployment, run `sql/tests/00_admin_validation.sql`, then execute the remaining role scripts through fresh connections as described in `sql/tests/README.md`. Follow `sql/demo/README.md` for the lecturer sequence. Backup history needs at least three calendar days before the final demonstration.
 
 ## Security note
 
-The supplied accounts and data are fictitious and intended only for an isolated coursework environment. Do not reuse demonstration passwords or keys. A production bank would additionally use managed secrets/HSM-backed keys, MFA at the identity tier, hardened TLS certificates, off-site immutable backup storage, high availability replicas, monitoring/SIEM, and formal key rotation.
+The supplied accounts, data, and credentials are fictitious and intended only for an isolated coursework environment. Do not reuse the committed demonstration passwords or keys. A production bank would additionally use managed secrets/HSM-backed keys, MFA at the identity tier, hardened TLS certificates, off-site immutable backup storage, high availability replicas, monitoring/SIEM, and formal key rotation.

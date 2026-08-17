@@ -3,11 +3,9 @@ GO
 SET NOCOUNT ON;
 GO
 
+-- Create and configure the analytics database.
 IF DB_ID(N'$(AnalyticsDatabaseName)') IS NULL
-BEGIN
-    DECLARE @CreateAnalyticsDatabase nvarchar(max) = N'CREATE DATABASE ' + QUOTENAME(N'$(AnalyticsDatabaseName)') + N';';
-    EXEC sys.sp_executesql @CreateAnalyticsDatabase;
-END;
+    CREATE DATABASE [$(AnalyticsDatabaseName)];
 GO
 ALTER DATABASE [$(AnalyticsDatabaseName)] SET RECOVERY SIMPLE;
 ALTER DATABASE [$(AnalyticsDatabaseName)] SET PAGE_VERIFY CHECKSUM;
@@ -15,6 +13,7 @@ GO
 
 USE [$(AnalyticsDatabaseName)];
 GO
+-- Enable transparent data encryption for analytics data.
 IF NOT EXISTS (SELECT 1 FROM sys.dm_database_encryption_keys WHERE database_id = DB_ID())
     CREATE DATABASE ENCRYPTION KEY WITH ALGORITHM = AES_256
         ENCRYPTION BY SERVER CERTIFICATE SmartBank_TDE_Certificate;
@@ -27,6 +26,7 @@ IF NOT EXISTS
     ALTER DATABASE [$(AnalyticsDatabaseName)] SET ENCRYPTION ON;
 GO
 
+-- Create the anonymized analytics tables.
 IF OBJECT_ID(N'dbo.CustomerAnon', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.CustomerAnon
@@ -75,6 +75,7 @@ BEGIN
 END;
 GO
 
+-- Refresh the anonymized analytics copy.
 CREATE OR ALTER PROCEDURE dbo.usp_RefreshMaskedData
 AS
 BEGIN
@@ -147,6 +148,7 @@ BEGIN
 END;
 GO
 
+-- Check that the analytics copy contains no direct identifiers.
 CREATE OR ALTER PROCEDURE dbo.usp_StaticMaskingQualityCheck
 AS
 BEGIN
@@ -160,9 +162,11 @@ BEGIN
 END;
 GO
 
+-- Populate the analytics copy immediately.
 EXEC dbo.usp_RefreshMaskedData;
 GO
 
+-- Give the auditor read-only analytics access.
 IF DATABASE_PRINCIPAL_ID(N'rl_analytics_reader') IS NULL CREATE ROLE rl_analytics_reader AUTHORIZATION dbo;
 IF SUSER_ID(N'sb_auditor_noor') IS NOT NULL AND USER_ID(N'sb_auditor_noor') IS NULL
     CREATE USER [sb_auditor_noor] FOR LOGIN [sb_auditor_noor];
@@ -175,6 +179,7 @@ REVOKE CONTROL ON SCHEMA::dbo FROM rl_analytics_reader;
 DENY INSERT, UPDATE, DELETE, ALTER ON SCHEMA::dbo TO rl_analytics_reader;
 GO
 
+-- Schedule the nightly refresh.
 USE [msdb];
 GO
 DECLARE @Today int = CONVERT(int, CONVERT(char(8), GETDATE(), 112));
@@ -190,7 +195,6 @@ BEGIN
     EXEC dbo.sp_add_jobserver @job_name = N'SmartBank - Static Mask Refresh';
 END;
 
--- Preserve the job ID and its execution history across idempotent redeployments.
 EXEC dbo.sp_update_job @job_name = N'SmartBank - Static Mask Refresh', @enabled = 1;
 
 IF EXISTS
