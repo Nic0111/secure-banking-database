@@ -162,13 +162,8 @@ BEGIN
 END;
 GO
 
--- Establish the full-backup base immediately so transaction-log backups can start.
-IF NOT EXISTS
-(
-    SELECT 1 FROM msdb.dbo.backupset
-    WHERE database_name = DB_NAME() AND type = 'D' AND is_copy_only = 0
-)
-    EXEC ops.usp_RunBackup @BackupType = 'F';
+-- Create a fresh full-backup base and deployment-specific backup evidence.
+EXEC ops.usp_RunBackup @BackupType = 'F';
 GO
 
 -- Enable SQL Server Agent features.
