@@ -1,15 +1,39 @@
-# Lecturer demonstration runbook
+# SmartBank assignment demonstration
 
-Open one SSMS/Azure Data Studio connection per login. Execute each statement individually so the result and corresponding audit event are easy to explain.
+This folder is the presentation layer for the implemented SmartBank security controls. It does not deploy objects and does not replace the automated assertions in `sql/tests`. Each numbered script follows the wording and order of the assignment so that the evidence is easy to trace during marking.
 
-1. As `sa`, run `01_security_inventory.sql` to show all users, roles, explicit grants/denies, RLS predicates, DDM rules, encryption status, and job schedules.
-2. Connect as the DBA, both managers, both officers, and both customers. Use the matching scripts in `../tests/` to prove each allowed action, denial, validation failure, and peer-manager isolation boundary.
-3. Attempt one invalid password login and retain the error. SQL Server Audit records it through `FAILED_LOGIN_GROUP`.
-4. Run `02_audit_evidence.sql` as `sa` or the auditor to correlate login/logout, DML, DDL, procedure, and permission events.
-5. Run `03_backup_evidence.sql` after at least three consecutive days. It proves full/differential/log frequency, AES-256 encryption, checksums, verification, and job success.
-6. On the second instance, run `../recovery/01_restore_encrypted_full.sql`, then show row counts and automatic customer PII decryption.
-7. For point-in-time recovery, follow `../recovery/README.md`: capture a marker, let the lecturer delete one or two `demo.RecoveryTarget` rows, capture a post-change log backup, and restore to `SmartBankDB_PITR` at the marker.
-8. If asked to add a user/change permissions, run `04_permission_change.sql`, then rerun audit evidence and point to the database role/permission audit event.
-9. Run `05_consolidated_evidence.sql` at any point for a concise live snapshot of server state, dataset size, role membership, RLS, masking, audit totals, backup history, jobs, and recovery copies.
+## Before the demonstration
 
-Do not expose key passwords on screen. Certificate files and their private-key password are required for a cross-instance encrypted restore.
+1. Deploy the implementation and ensure SQL Server Agent is running.
+2. Start from the golden baseline, then run `00_preflight_and_baseline.sql` as `sa`.
+3. Open a fresh SSMS connection for every named login. Do not use `EXECUTE AS` as evidence of server authentication.
+4. Enable SQLCMD mode only for `02_integrity/05_customer_transactions.sql` and supply `DemoTransactionPin` externally. Never place a password or PIN in a screenshot or source file.
+5. Keep the `sa` and `sb_auditor_noor` connections available for the audit and availability evidence.
+
+Expected permission errors are part of the evidence. The scripts catch expected business-rule failures where execution should continue; login failures must be demonstrated at the SSMS connection dialog and then viewed in SQL Server Audit.
+
+## Recommended run order
+
+| Order | Script or folder | Connection | Data effect |
+|---:|---|---|---|
+| 1 | `00_preflight_and_baseline.sql` | `sa` | Read-only |
+| 2 | `01_confidentiality` in numeric order | The login named in each header | Read-only |
+| 3 | `02_integrity` in numeric order | The login named in each header | Controlled demo changes; some are restored in-script |
+| 4 | `02_integrity/06_all_valid_invalid_manipulations_logged.sql` | `sb_auditor_noor` | Read-only |
+| 5 | `03_availability` in numeric order | `sa` | Read-only evidence; recovery operations remain in `sql/recovery` |
+| 6 | `90_permission_change_extension.sql` | `sa` | Reversible user/role/permission change |
+| 7 | `99_consolidated_evidence.sql` | `sa` | Read-only |
+
+After a full demonstration, restore the golden baseline before repeating it. This removes the deliberately opened test account and the appended transaction evidence while retaining a predictable starting state.
+
+## Evidence rules
+
+- Capture the query text, connected login, result grid, and timestamp together where practical.
+- A successful restricted query is not a pass unless the visible rows match the assignment boundary.
+- A denial is not a pass unless the corresponding permitted operation is also shown.
+- Do not expose encrypted source values, login passwords, transaction PINs, certificate private keys, or full audit statements containing secrets.
+- The security auditor is an additional separation-of-duties control, not a substitute for any assignment actor.
+
+## Known implementation gap surfaced by the demo
+
+The assignment says staff may update their own record except salary. The procedure supports DBA, manager, and officer identities, but the current permissions grant its execution only to manager and officer roles. `02_integrity/04_staff_updates_own_record_except_salary.sql` deliberately reports this as a failure for `sb_dba_aisha`; the demo does not conceal or work around it.
