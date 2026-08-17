@@ -1,10 +1,16 @@
 ```bash
-SB_SERVER='100.100.101.10,1433'
+set -u
+
+: "${SB_SERVER:?Set SB_SERVER to the SQL Server instance before running the suite}"
+
+test_failures=0
 
 run_test() {
   echo "\n===== $3 as $1 ====="
-  sqlcmd -S "$SB_SERVER" -U "$1" -P "$2" -C -i "$3"
-  return 0
+  if ! sqlcmd -S "$SB_SERVER" -U "$1" -P "$2" -C -b -V 16 -i "$3"; then
+    echo "FAIL: $3 as $1"
+    test_failures=$((test_failures + 1))
+  fi
 }
 
 # Baseline and confidentiality
@@ -37,4 +43,11 @@ run_test sb_auditor_noor 'SBank!Auditor_2026#Noor' sql/tests/02_integrity/06_aud
 run_test sa 'user@123' sql/tests/03_availability/01_backup_assertions.sql
 run_test sa 'user@123' sql/tests/03_availability/02_rpo_assertions.sql
 run_test sa 'user@123' sql/tests/03_availability/03_recovery_assertions.sql
+
+if ((test_failures > 0)); then
+  echo "TEST SUITE FAILED: $test_failures invocation(s) failed."
+  exit 1
+fi
+
+echo "TEST SUITE PASSED."
 ```

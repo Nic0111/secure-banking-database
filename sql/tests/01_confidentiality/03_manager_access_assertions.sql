@@ -26,7 +26,38 @@ SELECT * FROM api.vw_CustomerAccountSummary;
 GO
 
 -- EXPECTED DENIAL: a manager cannot read encrypted employment data directly.
-SELECT * FROM core.StaffEmployment;
+DECLARE @EmploymentReadDenied bit = 0;
+BEGIN TRY
+    SELECT * FROM core.StaffEmployment;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @EmploymentReadDenied = 1;
+    SELECT N'PASS - direct employment read denied' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @EmploymentReadDenied = 0
+    THROW 51112, 'FAIL: a manager unexpectedly read core.StaffEmployment directly.', 1;
+
 -- EXPECTED DENIAL: only customers can submit transactions.
-EXEC api.usp_PerformTransaction 'DEPOSIT', 'A000000001', NULL, 10.00, '482731', 'ONLINE';
+DECLARE @TransactionExecuteDenied bit = 0;
+BEGIN TRY
+    EXEC api.usp_PerformTransaction 'DEPOSIT', 'A000000001', NULL, 10.00, '482731', 'ONLINE';
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @TransactionExecuteDenied = 1;
+    SELECT N'PASS - customer transaction procedure denied to manager' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @TransactionExecuteDenied = 0
+    THROW 51113, 'FAIL: a manager unexpectedly executed the customer transaction procedure.', 1;
 GO

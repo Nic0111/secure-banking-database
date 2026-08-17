@@ -14,7 +14,22 @@ EXEC api.usp_VerifyAccountBalances;
 GO
 
 -- EXPECTED DENIAL: the auditor cannot read business data.
-SELECT * FROM core.Customer;
+DECLARE @BusinessDataReadDenied bit = 0;
+BEGIN TRY
+    SELECT * FROM core.Customer;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @BusinessDataReadDenied = 1;
+    SELECT N'PASS - direct business-data read denied to auditor' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @BusinessDataReadDenied = 0
+    THROW 51230, 'FAIL: the auditor unexpectedly read core.Customer directly.', 1;
 GO
 
 -- The auditor can inspect the anonymized analytics copy only.

@@ -20,5 +20,20 @@ SELECT * FROM api.vw_MyTransactions ORDER BY TransDate DESC;
 GO
 
 -- EXPECTED DENIAL: customers cannot read the base account table.
-SELECT * FROM core.Account;
+DECLARE @BaseAccountReadDenied bit = 0;
+BEGIN TRY
+    SELECT * FROM core.Account;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @BaseAccountReadDenied = 1;
+    SELECT N'PASS - direct core.Account read denied' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @BaseAccountReadDenied = 0
+    THROW 51122, 'FAIL: a customer unexpectedly read core.Account directly.', 1;
 GO

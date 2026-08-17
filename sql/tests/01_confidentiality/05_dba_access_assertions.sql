@@ -8,6 +8,37 @@ EXEC api.usp_GetMyStaffProfile;
 GO
 
 -- EXPECTED DENIAL: the DBA role cannot read business tables or manager data.
-SELECT * FROM core.Staff;
-EXEC api.usp_ManagerGetStaffProfiles;
+DECLARE @BusinessTableReadDenied bit = 0;
+BEGIN TRY
+    SELECT * FROM core.Staff;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @BusinessTableReadDenied = 1;
+    SELECT N'PASS - direct business-table read denied to DBA' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @BusinessTableReadDenied = 0
+    THROW 51116, 'FAIL: the DBA unexpectedly read core.Staff directly.', 1;
+
+DECLARE @ManagerProcedureDenied bit = 0;
+BEGIN TRY
+    EXEC api.usp_ManagerGetStaffProfiles;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @ManagerProcedureDenied = 1;
+    SELECT N'PASS - manager procedure denied to DBA' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @ManagerProcedureDenied = 0
+    THROW 51117, 'FAIL: the DBA unexpectedly executed the manager profile procedure.', 1;
 GO
