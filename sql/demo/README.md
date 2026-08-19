@@ -4,13 +4,13 @@ This folder is the presentation layer for the implemented SmartBank security con
 
 ## Before the demonstration
 
-1. Deploy the implementation and ensure SQL Server Agent is running.
+1. Follow `SSMS_RUNBOOK.md`. It is the single presentation checklist.
 2. Start from the golden baseline, then run `00_preflight_and_baseline.sql` as `sa`.
 3. Open a fresh SSMS connection for every named login. Do not use `EXECUTE AS` as evidence of server authentication.
-4. Enable SQLCMD mode only for `02_integrity/05_customer_transactions.sql` and supply `DemoTransactionPin` externally. Never place a password or PIN in a screenshot or source file.
+4. SQLCMD mode is needed for the customer-transaction script and the recovery scripts that use SQLCMD variables. Never place a password or PIN in a screenshot or source file.
 5. Keep the `sa` and `sb_auditor_noor` connections available for the audit and availability evidence.
 
-Expected permission errors are part of the evidence. The scripts catch expected business-rule failures where execution should continue; login failures must be demonstrated at the SSMS connection dialog and then viewed in SQL Server Audit.
+Expected permission and business-rule errors are part of the evidence. Read the short comment immediately before each expected error, then continue to the next section. Login failures must be demonstrated at the SSMS connection dialog and then viewed in SQL Server Audit.
 
 ## Recommended run order
 
@@ -34,6 +34,8 @@ After a full demonstration, restore the golden baseline before repeating it. Thi
 - Do not expose encrypted source values, login passwords, transaction PINs, certificate private keys, or full audit statements containing secrets.
 - The security auditor is an additional separation-of-duties control, not a substitute for any assignment actor.
 
-## Known implementation gap surfaced by the demo
+## Demo boundary
 
-The assignment says staff may update their own record except salary. The procedure supports DBA, manager, and officer identities, but the current permissions grant its execution only to manager and officer roles. `02_integrity/04_staff_updates_own_record_except_salary.sql` deliberately reports this as a failure for `sb_dba_aisha`; the demo does not conceal or work around it.
+The DBA demonstration is limited to table definitions. The DBA does not update
+business data, including its own staff profile. Managers and officers use the
+own-profile script for the staff-contact requirement.
