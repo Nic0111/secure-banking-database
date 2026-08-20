@@ -2,13 +2,18 @@
 USE [SmartBankDB];
 GO
 
--- Each manager sees their own profile and all officers, but not the other manager.
+-- Each manager sees their own profile separately and this procedure returns officers only.
+DECLARE @ManagerStaffID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00002'
+        WHEN N'sb_manager_siti' THEN 'S00007'
+    END;
 DECLARE @PeerManagerStaffID char(6) =
     CASE ORIGINAL_LOGIN()
         WHEN N'sb_manager_daniel' THEN 'S00007'
         WHEN N'sb_manager_siti' THEN 'S00002'
     END;
-IF @PeerManagerStaffID IS NULL
+IF @ManagerStaffID IS NULL OR @PeerManagerStaffID IS NULL
     THROW 51110, 'Run this test only as a configured manager login.', 1;
 
 CREATE TABLE #VisibleStaff
@@ -17,6 +22,9 @@ CREATE TABLE #VisibleStaff
     BranchName nvarchar(100), Phone varchar(20), Salary decimal(19, 2), IsActive bit
 );
 INSERT #VisibleStaff EXEC api.usp_ManagerGetStaffProfiles;
+IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @ManagerStaffID)
+    THROW 51114, 'FAIL: the manager staff-list procedure returned the logged-in manager.', 1;
+
 IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @PeerManagerStaffID)
     THROW 51111, 'FAIL: a manager can view the other manager''s employment profile.', 1;
 

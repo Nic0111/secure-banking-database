@@ -155,7 +155,7 @@ BEGIN
     FROM core.Staff AS staff
     INNER JOIN core.StaffEmployment AS employment ON employment.StaffID = staff.StaffID
     INNER JOIN core.Branch AS branch ON branch.BranchID = employment.BranchID
-    WHERE staff.StaffID = @ManagerStaffID OR employment.Position = 'BANK_OFFICER'
+    WHERE employment.Position = 'BANK_OFFICER'
     ORDER BY employment.Position, staff.StaffID;
 END;
 GO
