@@ -221,8 +221,11 @@ def set_page_number_start(section, value):
 
 def setup_numbering(doc):
     numbering = doc.part.numbering_part.element
-    abstract_ids = [int(node.get(qn("w:abstractNumId"))) for node in numbering.findall(qn("w:abstractNum"))]
-    num_ids = [int(node.get(qn("w:numId"))) for node in numbering.findall(qn("w:num"))]
+    try:
+        abstract_ids = [int(node.get(qn("w:abstractNumId"))) for node in numbering.findall(qn("w:abstractNum"))]
+        num_ids = [int(node.get(qn("w:numId"))) for node in numbering.findall(qn("w:num"))]
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(f"Unable to read numbering definitions from the report template: {exc}") from exc
     next_abstract = max(abstract_ids or [0]) + 1
     next_num = max(num_ids or [0]) + 1
 
@@ -735,7 +738,7 @@ def build_report():
     )
     rbac = [
         ("DBA", "Own staff profile", "CREATE TABLE; ALTER/VIEW DEFINITION on core", "No base-table SELECT or business DML", "Maintains structure without managing data."),
-        ("Manager", "Own + all officers; all accounts/transactions", "Manage officer staff records; update own contact", "No peer-manager profile/change; no transactions or core DML", "Proves horizontal isolation within one role."),
+        ("Manager", "Own + officers + DBA; all accounts/transactions", "Manage officer and DBA staff records; update own contact", "No peer-manager profile/change; no transactions or core DML", "Proves horizontal isolation within one role."),
         ("Officer", "Own staff; all accounts/transactions", "Create customers/accounts; change account status; own contact", "No manager functions; no balance DML; no transactions", "Manages customer accounts only."),
         ("Customer", "Own profile, accounts and transactions", "Deposit, withdrawal, transfer; set PIN", "No base tables; no other customer rows", "Only customers can transact."),
         ("Auditor", "Audit, metadata, backup health, masked analytics", "Read-only verification procedures", "No business tables or data changes", "Independent evidence access."),
@@ -982,7 +985,7 @@ def build_report():
         ("Admin baseline", "TDE, data volume, RLS, DDM, jobs, encrypted backup", "Pass"),
         ("Ledger", "Recompute SHA2-512 chain and balances", "Pass"),
         ("DBA", "DDL allowed; base SELECT/DML and manager API denied", "Pass"),
-        ("Managers Daniel/Siti", "Own + officer profiles; peer manager excluded from view/update/deactivation", "Implemented; live rerun required"),
+        ("Managers Daniel/Siti", "Own + officer + DBA profiles; peer manager excluded from view/update/deactivation", "Implemented; live rerun required"),
         ("Officer", "Own profile; all account summaries; controlled account management", "Pass"),
         ("Customer Amelia", "Own decrypted profile/accounts/transactions; deposit; isolation", "Pass"),
         ("Customer Hafiz", "Different isolated account/transaction set", "Pass"),

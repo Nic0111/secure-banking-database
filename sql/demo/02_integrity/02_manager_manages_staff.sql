@@ -2,10 +2,13 @@
 USE [SmartBankDB];
 GO
 
--- Managers update an officer only through the approved procedure.
+-- Managers update officer and DBA records only through the approved procedure.
 EXEC api.usp_ManagerUpdateOfficer
     @StaffID = 'S00003', @StaffName = N'Farid Iskandar', @Phone = '012-3101003',
     @BranchID = 'B0001', @Salary = 5200.00;
+EXEC api.usp_ManagerUpdateOfficer
+    @StaffID = 'S00001', @StaffName = N'Aisha Rahman', @Phone = '012-3101001',
+    @BranchID = 'B0004', @Salary = 9200.00;
 EXEC api.usp_ManagerGetStaffProfiles;
 
 -- Expected result: validation error. A manager cannot change another manager.

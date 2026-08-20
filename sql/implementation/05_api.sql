@@ -163,7 +163,7 @@ BEGIN
     FROM core.Staff AS staff
     INNER JOIN core.StaffEmployment AS employment ON employment.StaffID = staff.StaffID
     INNER JOIN core.Branch AS branch ON branch.BranchID = employment.BranchID
-    WHERE employment.Position = 'BANK_OFFICER'
+    WHERE employment.Position IN ('BANK_OFFICER', 'DBA')
     ORDER BY employment.Position, staff.StaffID;
 END;
 GO
@@ -307,8 +307,8 @@ BEGIN
     BEGIN TRY
         IF NOT EXISTS (SELECT 1 FROM sec.PrincipalMap WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1)
             THROW 50211, 'Only an active bank manager may update officer records.', 1;
-        IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID AND Position = 'BANK_OFFICER')
-            THROW 50212, 'The target is not a bank officer.', 1;
+        IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID AND Position IN ('BANK_OFFICER', 'DBA'))
+            THROW 50212, 'The target is not a bank officer or DBA.', 1;
         IF NOT EXISTS (SELECT 1 FROM core.Branch WHERE BranchID = @BranchID AND IsActive = 1)
             THROW 50213, 'Branch does not exist or is inactive.', 1;
         IF @Salary IS NOT NULL AND @Salary <= 0 THROW 50214, 'Salary must be positive.', 1;
@@ -327,12 +327,12 @@ BEGIN
         SET BranchID = @BranchID,
             SalaryCipher = COALESCE(@Cipher, SalaryCipher),
             SalaryLastChangedAt = CASE WHEN @Salary IS NULL THEN SalaryLastChangedAt ELSE SYSUTCDATETIME() END
-        WHERE StaffID = @StaffID AND Position = 'BANK_OFFICER';
+        WHERE StaffID = @StaffID AND Position IN ('BANK_OFFICER', 'DBA');
         COMMIT TRANSACTION;
         EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = NULL;
 
         EXEC audit.usp_LogApplicationEvent 'STAFF_MANAGEMENT', N'api.usp_ManagerUpdateOfficer', 1,
-             'STAFF', @StaffID, @CorrelationID, NULL, N'Bank officer record updated through controlled procedure.';
+             'STAFF', @StaffID, @CorrelationID, NULL, N'Staff record updated through controlled procedure.';
     END TRY
     BEGIN CATCH
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;

@@ -5,7 +5,7 @@ GO
 -- Managers see their own profile through the self-service procedure.
 EXEC api.usp_GetMyStaffProfile;
 
--- Managers see officer profiles through the staff-management procedure.
+-- Managers see officer and DBA profiles through the staff-management procedure.
 EXEC api.usp_ManagerGetStaffProfiles;
 
 -- Managers can view all customer accounts and transactions through views.

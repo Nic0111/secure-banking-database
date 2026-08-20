@@ -2,7 +2,7 @@
 USE [SmartBankDB];
 GO
 
--- Each manager sees their own profile separately and this procedure returns officers only.
+-- Each manager sees their own profile separately and this procedure returns officers and the DBA.
 DECLARE @ManagerStaffID char(6) =
     CASE ORIGINAL_LOGIN()
         WHEN N'sb_manager_daniel' THEN 'S00002'
@@ -27,6 +27,9 @@ IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @ManagerStaffID)
 
 IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @PeerManagerStaffID)
     THROW 51111, 'FAIL: a manager can view the other manager''s employment profile.', 1;
+
+IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00001' AND Position = 'DBA')
+    THROW 51115, 'FAIL: the manager staff-list procedure omitted the DBA profile.', 1;
 
 EXEC api.usp_GetMyStaffProfile;
 SELECT * FROM #VisibleStaff ORDER BY Position, StaffID;

@@ -6,7 +6,7 @@ Run these files in numeric order. Use fresh SQL-authenticated connections for th
 | --- | --- | --- |
 | `01_all_users_authenticated.sql` | Server login, database user, business identity and role mapping | `sa`, then every demonstration login |
 | `02_all_authenticated_users_staff_directory.sql` | Non-customer users see the staff directory (ID, name, phone); customers see the ID-free directory | Every non-customer demonstration login |
-| `03_bank_manager_visibility.sql` | Own record, officer records, all accounts and all transactions | Each manager |
+| `03_bank_manager_visibility.sql` | Own record, officer and DBA records, all accounts and all transactions | Each manager |
 | `04_bank_officer_visibility.sql` | Own record, all accounts and all transactions | Each officer |
 | `05_dba_visibility.sql` | Own record only | DBA |
 | `06_customer_visibility.sql` | Own profile, accounts, transactions and the ID-free directory | Each customer |
