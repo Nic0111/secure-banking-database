@@ -53,8 +53,10 @@ Run these in order. Use the named login in the file header.
 1. `02_integrity/01_dba_table_management_only.sql`
 2. `02_integrity/02_manager_manages_staff.sql`
 3. `02_integrity/03_officer_manages_customer_accounts.sql`
-4. `02_integrity/04_staff_updates_own_record_except_salary.sql` as a manager
-   or officer only. DBAs deliberately do not modify business data.
+4. `02_integrity/04_staff_updates_own_record_except_salary.sql` as the
+   officer `sb_officer_farid`. The same controlled procedure lets the DBA
+   and managers update their own name/phone; salary remains protected
+   and the DBA still has no direct DML on core.
 5. `02_integrity/05_customer_transactions.sql` as `sb_customer_amelia`
 6. `02_integrity/06_all_valid_invalid_manipulations_logged.sql` as
    `sb_auditor_noor`.

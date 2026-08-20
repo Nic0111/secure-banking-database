@@ -36,6 +36,7 @@ After a full demonstration, restore the golden baseline before repeating it. Thi
 
 ## Demo boundary
 
-The DBA demonstration is limited to table definitions. The DBA does not update
-business data, including its own staff profile. Managers and officers use the
-own-profile script for the staff-contact requirement.
+The DBA demonstration on base tables is limited to table definitions. The DBA
+may update only its own name/phone through the controlled own-profile script;
+salary remains protected and no base-table DML is possible. Managers and
+officers use the same script for the staff-contact requirement.

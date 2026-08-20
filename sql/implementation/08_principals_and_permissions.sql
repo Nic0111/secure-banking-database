@@ -150,6 +150,7 @@ GO
 
 -- Grant DBA permissions.
 GRANT EXECUTE ON OBJECT::api.usp_GetMyStaffProfile TO rl_dba;
+GRANT EXECUTE ON OBJECT::api.usp_UpdateOwnStaffProfile TO rl_dba;
 GRANT CREATE TABLE TO rl_dba;
 GRANT ALTER ON SCHEMA::core TO rl_dba;
 GRANT VIEW DEFINITION ON SCHEMA::core TO rl_dba;

@@ -737,7 +737,7 @@ def build_report():
         "RBAC is deny-by-default. public is denied direct SELECT/INSERT/UPDATE/DELETE on core and sec; ordinary roles receive only the views and procedures needed for their tasks. This prevents a broad table grant from bypassing procedure validation, DML outcome logging or column decryption policy.",
     )
     rbac = [
-        ("DBA", "Own staff profile", "CREATE TABLE; ALTER/VIEW DEFINITION on core", "No base-table SELECT or business DML", "Maintains structure without managing data."),
+        ("DBA", "Own staff profile", "CREATE TABLE; ALTER/VIEW DEFINITION on core; own contact update (name/phone only, salary protected)", "No base-table SELECT or business DML", "Maintains structure without managing data."),
         ("Manager", "Own + officers + DBA; all accounts/transactions", "Manage officer and DBA staff records; update own contact", "No peer-manager profile/change; no transactions or core DML", "Proves horizontal isolation within one role."),
         ("Officer", "Own staff; all accounts/transactions", "Create customers/accounts; change account status; own contact", "No manager functions; no balance DML; no transactions", "Manages customer accounts only."),
         ("Customer", "Own profile, accounts and transactions", "Deposit, withdrawal, transfer; set PIN", "No base tables; no other customer rows", "Only customers can transact."),

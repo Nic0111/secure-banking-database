@@ -31,6 +31,7 @@ run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/02_integrity/02
 run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/02_integrity/02_manager_staff_assertions.sql
 run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/02_integrity/03_officer_account_assertions.sql
 run_test sb_officer_priya 'SBank!Officer_2026#Priya' sql/tests/02_integrity/03_officer_account_assertions.sql
+run_test sb_dba_aisha 'SBank!Dba_2026#Aisha' sql/tests/02_integrity/04_own_record_assertions.sql
 run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/02_integrity/04_own_record_assertions.sql
 run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/02_integrity/04_own_record_assertions.sql
 run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/02_integrity/04_own_record_assertions.sql
