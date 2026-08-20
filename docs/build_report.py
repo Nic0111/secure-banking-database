@@ -772,7 +772,8 @@ def build_report():
         "Views provide stable, minimal result sets and keep ciphertext, salts, hashes, audit internals and temporal period columns out of ordinary queries. They also compose naturally with RLS, so a customer's view returns only rows already admitted by the policy.",
     )
     views = [
-        ("api.vw_StaffDirectory", "All authenticated users", "StaffID, name, phone", "No position, branch or salary"),
+        ("api.vw_StaffDirectory", "Staff, auditor, DBA (not customers)", "StaffID, name, phone", "No position, branch or salary; denied to rl_customer"),
+        ("api.vw_StaffDirectoryPublic", "Customers", "Name, phone", "No StaffID, position, branch or salary"),
         ("api.vw_CustomerAccountSummary", "Managers, officers", "Customer, account type, balance, status", "No IC, phone/address ciphertext or PIN"),
         ("api.vw_MyAccounts", "Customers", "Own account summary", "RLS enforces owner"),
         ("api.vw_MyTransactions", "Managers, officers, customers", "Transaction statement fields", "Customer row filtering; no hashes"),

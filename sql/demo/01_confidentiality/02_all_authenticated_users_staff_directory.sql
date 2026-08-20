@@ -1,8 +1,8 @@
--- Run as: any SmartBank login.
+-- Run as: any non-customer SmartBank login (customers see the ID-free directory in 06).
 USE [SmartBankDB];
 GO
 
--- Every authenticated user can see the common staff directory.
+-- Every non-customer authenticated user can see the common staff directory.
 SELECT StaffID, StaffName, Phone
 FROM api.vw_StaffDirectory
 ORDER BY StaffID;

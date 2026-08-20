@@ -1,8 +1,8 @@
--- Connect as: any demonstration login.
+-- Connect as: any non-customer demonstration login.
 USE [SmartBankDB];
 GO
 
--- Every authenticated user can read the limited staff directory.
+-- Every non-customer authenticated user can read the staff directory.
 SELECT StaffID, StaffName, Phone
 FROM api.vw_StaffDirectory
 ORDER BY StaffID;

@@ -16,7 +16,7 @@ run_test() {
 # Baseline and confidentiality
 run_test sa 'user@123' sql/tests/00_admin_validation.sql
 run_test sa 'user@123' sql/tests/01_confidentiality/01_authentication_assertions.sql
-run_test sb_customer_amelia 'SBank!Customer_2026#Amelia' sql/tests/01_confidentiality/02_staff_directory_assertions.sql
+run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/01_confidentiality/02_staff_directory_assertions.sql
 run_test sb_manager_daniel 'SBank!Manager_2026#Daniel' sql/tests/01_confidentiality/03_manager_access_assertions.sql
 run_test sb_manager_siti 'SBank!Manager_2026#Siti' sql/tests/01_confidentiality/03_manager_access_assertions.sql
 run_test sb_officer_farid 'SBank!Officer_2026#Farid' sql/tests/01_confidentiality/04_officer_access_assertions.sql

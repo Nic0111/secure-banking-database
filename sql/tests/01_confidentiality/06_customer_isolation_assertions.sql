@@ -37,3 +37,27 @@ END CATCH;
 IF @BaseAccountReadDenied = 0
     THROW 51122, 'FAIL: a customer unexpectedly read core.Account directly.', 1;
 GO
+
+-- EXPECTED DENIAL: customers cannot read the internal staff directory (StaffID withheld).
+DECLARE @StaffDirectoryReadDenied bit = 0;
+BEGIN TRY
+    SELECT TOP (1) * FROM api.vw_StaffDirectory;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @StaffDirectoryReadDenied = 1;
+    SELECT N'PASS - internal staff directory read denied' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @StaffDirectoryReadDenied = 0
+    THROW 51123, 'FAIL: a customer unexpectedly read the internal staff directory.', 1;
+
+-- Customers read the ID-free public directory instead.
+SELECT StaffName, Phone
+FROM api.vw_StaffDirectoryPublic
+ORDER BY StaffName;
+GO

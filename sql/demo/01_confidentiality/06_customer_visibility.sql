@@ -9,6 +9,9 @@ EXEC api.usp_GetMyCustomerProfile;
 SELECT * FROM api.vw_MyAccounts ORDER BY AccountID;
 SELECT * FROM api.vw_MyTransactions ORDER BY TransID;
 
+-- Customers see the staff directory without internal staff IDs.
+SELECT StaffName, Phone FROM api.vw_StaffDirectoryPublic ORDER BY StaffName;
+
 -- Expected result: permission denied. Customers cannot read the base account table.
 SELECT TOP (1) * FROM core.Account;
 GO

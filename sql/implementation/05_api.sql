@@ -75,6 +75,14 @@ AS
     WHERE IsActive = 1;
 GO
 
+-- Customers see the directory without internal staff IDs.
+CREATE OR ALTER VIEW api.vw_StaffDirectoryPublic
+AS
+    SELECT StaffName, Phone
+    FROM core.Staff
+    WHERE IsActive = 1;
+GO
+
 CREATE OR ALTER VIEW api.vw_CustomerAccountSummary
 AS
     SELECT account.AccountID,

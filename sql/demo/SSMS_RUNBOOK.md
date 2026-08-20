@@ -35,8 +35,8 @@ Run the following in fresh connections. Each script first shows the permitted
 result, then ends with an expected permission denial for a protected base table.
 
 | Login | Script |
-|---|---|
-| Any SmartBank user | `01_confidentiality/02_all_authenticated_users_staff_directory.sql` |
+| --- | --- |
+| Any non-customer SmartBank user | `01_confidentiality/02_all_authenticated_users_staff_directory.sql` |
 | `sb_manager_daniel` or `sb_manager_siti` | `01_confidentiality/03_bank_manager_visibility.sql` |
 | `sb_officer_farid` or `sb_officer_priya` | `01_confidentiality/04_bank_officer_visibility.sql` |
 | `sb_dba_aisha` | `01_confidentiality/05_dba_visibility.sql` |

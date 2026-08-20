@@ -144,6 +144,8 @@ GO
 
 -- Grant the common directory view.
 GRANT SELECT ON OBJECT::api.vw_StaffDirectory TO rl_authenticated;
+-- Customers keep the ID-free directory instead of the internal StaffID view.
+DENY SELECT ON OBJECT::api.vw_StaffDirectory TO rl_customer;
 GO
 
 -- Grant DBA permissions.
@@ -181,6 +183,7 @@ GRANT EXECUTE ON OBJECT::api.usp_SetTransactionPin TO rl_customer;
 GRANT EXECUTE ON OBJECT::api.usp_PerformTransaction TO rl_customer;
 GRANT SELECT ON OBJECT::api.vw_MyAccounts TO rl_customer;
 GRANT SELECT ON OBJECT::api.vw_MyTransactions TO rl_customer;
+GRANT SELECT ON OBJECT::api.vw_StaffDirectoryPublic TO rl_customer;
 GO
 
 -- Grant security-auditor permissions.
