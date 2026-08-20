@@ -56,6 +56,36 @@ IF NOT EXISTS
     ALTER SERVER ROLE SmartBankAuditReader ADD MEMBER [sb_auditor_noor];
 GO
 
+-- Restrict raw backup-catalog access to the SmartBank DBA.
+USE [msdb];
+GO
+IF USER_ID(N'sb_dba_aisha') IS NULL CREATE USER [sb_dba_aisha] FOR LOGIN [sb_dba_aisha];
+IF USER_ID(N'sb_manager_daniel') IS NULL CREATE USER [sb_manager_daniel] FOR LOGIN [sb_manager_daniel];
+IF USER_ID(N'sb_manager_siti') IS NULL CREATE USER [sb_manager_siti] FOR LOGIN [sb_manager_siti];
+IF USER_ID(N'sb_officer_farid') IS NULL CREATE USER [sb_officer_farid] FOR LOGIN [sb_officer_farid];
+IF USER_ID(N'sb_officer_priya') IS NULL CREATE USER [sb_officer_priya] FOR LOGIN [sb_officer_priya];
+IF USER_ID(N'sb_customer_amelia') IS NULL CREATE USER [sb_customer_amelia] FOR LOGIN [sb_customer_amelia];
+IF USER_ID(N'sb_customer_hafiz') IS NULL CREATE USER [sb_customer_hafiz] FOR LOGIN [sb_customer_hafiz];
+IF USER_ID(N'sb_auditor_noor') IS NULL CREATE USER [sb_auditor_noor] FOR LOGIN [sb_auditor_noor];
+GO
+
+-- Reconnect persistent msdb users after a reset recreates the logins.
+ALTER USER [sb_dba_aisha] WITH LOGIN = [sb_dba_aisha];
+ALTER USER [sb_manager_daniel] WITH LOGIN = [sb_manager_daniel];
+ALTER USER [sb_manager_siti] WITH LOGIN = [sb_manager_siti];
+ALTER USER [sb_officer_farid] WITH LOGIN = [sb_officer_farid];
+ALTER USER [sb_officer_priya] WITH LOGIN = [sb_officer_priya];
+ALTER USER [sb_customer_amelia] WITH LOGIN = [sb_customer_amelia];
+ALTER USER [sb_customer_hafiz] WITH LOGIN = [sb_customer_hafiz];
+ALTER USER [sb_auditor_noor] WITH LOGIN = [sb_auditor_noor];
+GO
+
+GRANT SELECT ON OBJECT::dbo.backupset TO [sb_dba_aisha];
+GRANT SELECT ON OBJECT::dbo.backupmediafamily TO [sb_dba_aisha];
+DENY SELECT ON OBJECT::dbo.backupset TO [sb_manager_daniel], [sb_manager_siti], [sb_officer_farid], [sb_officer_priya], [sb_customer_amelia], [sb_customer_hafiz], [sb_auditor_noor];
+DENY SELECT ON OBJECT::dbo.backupmediafamily TO [sb_manager_daniel], [sb_manager_siti], [sb_officer_farid], [sb_officer_priya], [sb_customer_amelia], [sb_customer_hafiz], [sb_auditor_noor];
+GO
+
 USE [$(DatabaseName)];
 GO
 -- Create database roles and users.

@@ -53,6 +53,30 @@ IF NOT EXISTS
       AND member_principal_id = USER_ID(N'sb_manager_siti')
 )
     THROW 51014, 'FAIL: the second manager is not assigned to rl_manager.', 1;
+IF
+(
+    SELECT COUNT(*)
+    FROM msdb.sys.database_permissions AS permission
+    INNER JOIN msdb.sys.database_principals AS principal ON principal.principal_id = permission.grantee_principal_id
+    WHERE principal.name IN
+        (N'sb_manager_daniel', N'sb_manager_siti', N'sb_officer_farid', N'sb_officer_priya',
+         N'sb_customer_amelia', N'sb_customer_hafiz', N'sb_auditor_noor')
+      AND permission.state = N'D'
+      AND permission.permission_name = N'SELECT'
+      AND permission.major_id = OBJECT_ID(N'msdb.dbo.backupset')
+) <> 7
+    THROW 51015, 'FAIL: every non-DBA SmartBank login must be denied direct backupset access.', 1;
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM msdb.sys.database_permissions AS permission
+    INNER JOIN msdb.sys.database_principals AS principal ON principal.principal_id = permission.grantee_principal_id
+    WHERE principal.name = N'sb_dba_aisha'
+      AND permission.state = N'G'
+      AND permission.permission_name = N'SELECT'
+      AND permission.major_id = OBJECT_ID(N'msdb.dbo.backupset')
+)
+    THROW 51016, 'FAIL: the DBA is missing direct backupset access.', 1;
 
 SELECT N'PASS - baseline deployment' AS Result,
        (SELECT COUNT(*) FROM core.Staff) AS StaffRows,

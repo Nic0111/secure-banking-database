@@ -11,6 +11,7 @@ SELECT * FROM api.vw_RolePermissionMatrix ORDER BY PrincipalName, SecurableName,
 EXEC audit.usp_ReadNativeAudit @StartTime = NULL, @EndTime = NULL, @OnlyFailures = 0;
 EXEC api.usp_VerifyLedgerChain;
 EXEC api.usp_VerifyAccountBalances;
+EXEC ops.usp_BackupHealth @Days = 3;
 GO
 
 -- EXPECTED DENIAL: the auditor cannot read business data.
@@ -30,6 +31,27 @@ END CATCH;
 
 IF @BusinessDataReadDenied = 0
     THROW 51230, 'FAIL: the auditor unexpectedly read core.Customer directly.', 1;
+GO
+
+-- EXPECTED DENIAL: the auditor cannot read raw backup metadata.
+USE [msdb];
+GO
+DECLARE @BackupHistoryReadDenied bit = 0;
+BEGIN TRY
+    SELECT TOP (1) * FROM dbo.backupset;
+END TRY
+BEGIN CATCH
+    IF ERROR_NUMBER() <> 229
+        THROW;
+
+    SET @BackupHistoryReadDenied = 1;
+    SELECT N'PASS - direct backup history read denied to auditor' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @BackupHistoryReadDenied = 0
+    THROW 51231, 'FAIL: the auditor unexpectedly read dbo.backupset directly.', 1;
 GO
 
 -- The auditor can inspect the anonymized analytics copy only.
