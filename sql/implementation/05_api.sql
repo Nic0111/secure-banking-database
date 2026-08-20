@@ -250,7 +250,6 @@ CREATE OR ALTER PROCEDURE api.usp_ManagerAddOfficer
     @StaffID char(6),
     @StaffName nvarchar(100),
     @Phone varchar(20),
-    @BranchID char(5),
     @Salary decimal(19, 2)
 WITH EXECUTE AS OWNER
 AS
@@ -259,16 +258,17 @@ BEGIN
     SET XACT_ABORT ON;
     DECLARE @CorrelationID uniqueidentifier = NEWID();
     DECLARE @Cipher varbinary(512);
+    DECLARE @ManagerStaffID char(6);
+    DECLARE @ManagerBranchID char(5);
 
     BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM sec.PrincipalMap WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1)
+        SELECT @ManagerStaffID = StaffID FROM sec.PrincipalMap
+        WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1;
+        IF @ManagerStaffID IS NULL
             THROW 50207, 'Only an active bank manager may add an officer record.', 1;
-        IF @BranchID <> (SELECT BranchID FROM core.StaffEmployment
-                         WHERE StaffID = (SELECT StaffID FROM sec.PrincipalMap
-                                          WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1))
-            THROW 50247, 'Officers can only be hired into the manager own branch.', 1;
+        SELECT @ManagerBranchID = BranchID FROM core.StaffEmployment WHERE StaffID = @ManagerStaffID;
         IF @Salary <= 0 THROW 50208, 'Salary must be positive.', 1;
-        IF NOT EXISTS (SELECT 1 FROM core.Branch WHERE BranchID = @BranchID AND IsActive = 1)
+        IF NOT EXISTS (SELECT 1 FROM core.Branch WHERE BranchID = @ManagerBranchID AND IsActive = 1)
             THROW 50209, 'Branch does not exist or is inactive.', 1;
 
         OPEN SYMMETRIC KEY SmartBank_Column_Key DECRYPTION BY CERTIFICATE SmartBank_Column_Certificate;
@@ -280,7 +280,7 @@ BEGIN
         BEGIN TRANSACTION;
         INSERT core.Staff (StaffID, StaffName, Phone) VALUES (@StaffID, @StaffName, @Phone);
         INSERT core.StaffEmployment (StaffID, Position, BranchID, SalaryCipher)
-        VALUES (@StaffID, 'BANK_OFFICER', @BranchID, @Cipher);
+        VALUES (@StaffID, 'BANK_OFFICER', @ManagerBranchID, @Cipher);
         COMMIT TRANSACTION;
         EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = NULL;
 
