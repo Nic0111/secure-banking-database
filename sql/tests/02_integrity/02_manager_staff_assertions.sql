@@ -2,14 +2,94 @@
 USE [SmartBankDB];
 GO
 
--- Managers can update officer and DBA records only through the approved procedure.
-EXEC api.usp_ManagerUpdateOfficer
-    @StaffID = 'S00004', @StaffName = N'Farid Iskandar', @Phone = '012-3101004',
-    @BranchID = 'B0001', @Salary = 5300.00;
+-- Managers can update officer and DBA records in their own branch only through the approved procedure.
+DECLARE @OwnOfficerStaffID char(6), @OwnOfficerName nvarchar(100),
+        @OwnOfficerPhone varchar(20), @OwnOfficerBranchID char(5),
+        @OwnOfficerSalary decimal(19, 2);
+IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
+BEGIN
+    SELECT @OwnOfficerStaffID = 'S00004', @OwnOfficerName = N'Farid Iskandar',
+           @OwnOfficerPhone = '012-3101004', @OwnOfficerBranchID = 'B0001',
+           @OwnOfficerSalary = 5300.00;
+END;
+ELSE IF ORIGINAL_LOGIN() = N'sb_manager_siti'
+BEGIN
+    SELECT @OwnOfficerStaffID = 'S00005', @OwnOfficerName = N'Priya Nair',
+           @OwnOfficerPhone = '012-3101005', @OwnOfficerBranchID = 'B0002',
+           @OwnOfficerSalary = 5400.00;
+END;
+
+IF @OwnOfficerStaffID IS NULL
+    THROW 51200, 'Run this test only as a configured manager login.', 1;
 
 EXEC api.usp_ManagerUpdateOfficer
-    @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
-    @BranchID = 'B0004', @Salary = 9200.00;
+    @StaffID = @OwnOfficerStaffID, @StaffName = @OwnOfficerName, @Phone = @OwnOfficerPhone,
+    @BranchID = @OwnOfficerBranchID, @Salary = @OwnOfficerSalary;
+
+IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
+BEGIN
+    -- The DBA is assigned to B0001, so Daniel can update the DBA record.
+    EXEC api.usp_ManagerUpdateOfficer
+        @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
+        @BranchID = 'B0001', @Salary = 9200.00;
+END;
+ELSE
+BEGIN
+    -- EXPECTED VALIDATION FAILURE: the DBA is not in Siti's branch.
+    DECLARE @DbaUpdateRejected bit = 0;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        EXEC api.usp_ManagerUpdateOfficer
+            @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
+            @BranchID = 'B0001', @Salary = 9200.00;
+        ROLLBACK TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        IF ERROR_NUMBER() <> 50245
+            THROW;
+
+        SET @DbaUpdateRejected = 1;
+        SELECT N'PASS - DBA update rejected: the DBA is not in the manager own branch' AS Result,
+               ERROR_NUMBER() AS ActualErrorNumber,
+               ERROR_MESSAGE() AS ActualErrorMessage;
+    END CATCH;
+
+    IF @DbaUpdateRejected = 0
+        THROW 51208, 'FAIL: a manager unexpectedly updated the DBA across branches.', 1;
+END;
+
+-- EXPECTED VALIDATION FAILURE: a manager cannot update an officer from another branch.
+DECLARE @OtherOfficerStaffID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00005'
+        WHEN N'sb_manager_siti' THEN 'S00004'
+    END;
+DECLARE @CrossBranchUpdateRejected bit = 0;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    EXEC api.usp_ManagerUpdateOfficer
+        @StaffID = @OtherOfficerStaffID, @StaffName = N'Cross Branch Target',
+        @Phone = '012-0000000', @BranchID = 'B0001', @Salary = 9000.00;
+    ROLLBACK TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+
+    IF ERROR_NUMBER() <> 50245
+        THROW;
+
+    SET @CrossBranchUpdateRejected = 1;
+    SELECT N'PASS - cross-branch officer update rejected' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @CrossBranchUpdateRejected = 0
+    THROW 51209, 'FAIL: a manager unexpectedly updated an officer from another branch.', 1;
 GO
 
 -- EXPECTED VALIDATION FAILURE: a manager cannot update or deactivate the other manager.

@@ -5,7 +5,7 @@ These scripts pair an allowed operation with a prohibited or invalid operation, 
 | File | Assignment evidence | Run as |
 | --- | --- | --- |
 | `01_dba_table_management_only.sql` | DBA manages table definitions but not business rows | DBA |
-| `02_manager_manages_staff.sql` | Manager updates officer and DBA records; non-eligible targets are rejected | Manager |
+| `02_manager_manages_staff.sql` | Manager updates own-branch officer and DBA records; cross-branch and non-eligible targets are rejected | `sb_manager_daniel` |
 | `03_officer_manages_customer_accounts.sql` | Officer opens and controls customer accounts | Officer |
 | `04_staff_updates_own_record_except_salary.sql` | Staff member (officer shown) updates own name/phone; salary remains protected | Officer (DBA and managers use the same procedure) |
 | `05_customer_transactions.sql` | Customer performs valid transactions; invalid requests are rejected | Customer |

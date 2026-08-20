@@ -51,7 +51,8 @@ encrypted base table is denied.
 Run these in order. Use the named login in the file header.
 
 1. `02_integrity/01_dba_table_management_only.sql`
-2. `02_integrity/02_manager_manages_staff.sql`
+2. `02_integrity/02_manager_manages_staff.sql` as `sb_manager_daniel`
+   (Siti, the B0002 manager, sees and updates only Priya).
 3. `02_integrity/03_officer_manages_customer_accounts.sql`
 4. `02_integrity/04_staff_updates_own_record_except_salary.sql` as the
    officer `sb_officer_farid`. The same controlled procedure lets the DBA

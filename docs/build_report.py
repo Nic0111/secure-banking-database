@@ -738,7 +738,7 @@ def build_report():
     )
     rbac = [
         ("DBA", "Own staff profile", "CREATE TABLE; ALTER/VIEW DEFINITION on core; own contact update (name/phone only, salary protected)", "No base-table SELECT or business DML", "Maintains structure without managing data."),
-        ("Manager", "Own + officers + DBA; all accounts/transactions", "Manage officer and DBA staff records; update own contact", "No peer-manager profile/change; no transactions or core DML", "Proves horizontal isolation within one role."),
+        ("Manager", "Own + own-branch officers and DBA; all accounts/transactions", "Manage own-branch officer and DBA staff records; update own contact", "No peer-manager profile/change; no other-branch staff access; no transactions or core DML", "Proves horizontal isolation within a role and by branch."),
         ("Officer", "Own staff; all accounts/transactions", "Create customers/accounts; change account status; own contact", "No manager functions; no balance DML; no transactions", "Manages customer accounts only."),
         ("Customer", "Own profile, accounts and transactions", "Deposit, withdrawal, transfer; set PIN", "No base tables; no other customer rows", "Only customers can transact."),
         ("Auditor", "Audit, metadata, backup health, masked analytics", "Read-only verification procedures", "No business tables or data changes", "Independent evidence access."),
@@ -985,7 +985,7 @@ def build_report():
         ("Admin baseline", "TDE, data volume, RLS, DDM, jobs, encrypted backup", "Pass"),
         ("Ledger", "Recompute SHA2-512 chain and balances", "Pass"),
         ("DBA", "DDL allowed; base SELECT/DML and manager API denied", "Pass"),
-        ("Managers Daniel/Siti", "Own + officer + DBA profiles; peer manager excluded from view/update/deactivation", "Implemented; live rerun required"),
+        ("Managers Daniel/Siti", "Own-branch officer and DBA profiles; peer manager and other-branch staff excluded from view/update/deactivation", "Implemented; live rerun required"),
         ("Officer", "Own profile; all account summaries; controlled account management", "Pass"),
         ("Customer Amelia", "Own decrypted profile/accounts/transactions; deposit; isolation", "Pass"),
         ("Customer Hafiz", "Different isolated account/transaction set", "Pass"),

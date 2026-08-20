@@ -148,12 +148,15 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @ManagerStaffID char(6);
 
+    DECLARE @ManagerBranchID char(5);
     SELECT @ManagerStaffID = StaffID
     FROM sec.PrincipalMap
     WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1;
 
     IF @ManagerStaffID IS NULL
         THROW 50202, 'Only an active bank manager may view staff employment profiles.', 1;
+
+    SELECT @ManagerBranchID = BranchID FROM core.StaffEmployment WHERE StaffID = @ManagerStaffID;
 
     SELECT staff.StaffID, staff.StaffName, employment.Position, branch.BranchName,
            staff.Phone,
@@ -164,6 +167,7 @@ BEGIN
     INNER JOIN core.StaffEmployment AS employment ON employment.StaffID = staff.StaffID
     INNER JOIN core.Branch AS branch ON branch.BranchID = employment.BranchID
     WHERE employment.Position IN ('BANK_OFFICER', 'DBA')
+      AND employment.BranchID = @ManagerBranchID
     ORDER BY employment.Position, staff.StaffID;
 END;
 GO
@@ -259,6 +263,10 @@ BEGIN
     BEGIN TRY
         IF NOT EXISTS (SELECT 1 FROM sec.PrincipalMap WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1)
             THROW 50207, 'Only an active bank manager may add an officer record.', 1;
+        IF @BranchID <> (SELECT BranchID FROM core.StaffEmployment
+                         WHERE StaffID = (SELECT StaffID FROM sec.PrincipalMap
+                                          WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1))
+            THROW 50247, 'Officers can only be hired into the manager own branch.', 1;
         IF @Salary <= 0 THROW 50208, 'Salary must be positive.', 1;
         IF NOT EXISTS (SELECT 1 FROM core.Branch WHERE BranchID = @BranchID AND IsActive = 1)
             THROW 50209, 'Branch does not exist or is inactive.', 1;
@@ -303,12 +311,21 @@ BEGIN
     SET XACT_ABORT ON;
     DECLARE @CorrelationID uniqueidentifier = NEWID();
     DECLARE @Cipher varbinary(512);
+    DECLARE @ManagerStaffID char(6);
+    DECLARE @ManagerBranchID char(5);
 
     BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM sec.PrincipalMap WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1)
+        SELECT @ManagerStaffID = StaffID FROM sec.PrincipalMap
+        WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1;
+        IF @ManagerStaffID IS NULL
             THROW 50211, 'Only an active bank manager may update officer records.', 1;
+        SELECT @ManagerBranchID = BranchID FROM core.StaffEmployment WHERE StaffID = @ManagerStaffID;
         IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID AND Position IN ('BANK_OFFICER', 'DBA'))
             THROW 50212, 'The target is not a bank officer or DBA.', 1;
+        IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID AND BranchID = @ManagerBranchID)
+            THROW 50245, 'The target is not in the manager own branch.', 1;
+        IF @BranchID <> @ManagerBranchID
+            THROW 50246, 'Officer records can only be assigned to the manager own branch.', 1;
         IF NOT EXISTS (SELECT 1 FROM core.Branch WHERE BranchID = @BranchID AND IsActive = 1)
             THROW 50213, 'Branch does not exist or is inactive.', 1;
         IF @Salary IS NOT NULL AND @Salary <= 0 THROW 50214, 'Salary must be positive.', 1;
@@ -359,6 +376,11 @@ BEGIN
             THROW 50215, 'Only an active bank manager may deactivate an officer.', 1;
         IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID AND Position = 'BANK_OFFICER')
             THROW 50216, 'The target is not a bank officer.', 1;
+        IF NOT EXISTS (SELECT 1 FROM core.StaffEmployment WHERE StaffID = @StaffID
+                       AND BranchID = (SELECT BranchID FROM core.StaffEmployment
+                                      WHERE StaffID = (SELECT StaffID FROM sec.PrincipalMap
+                                                      WHERE LoginName = ORIGINAL_LOGIN() AND UserType = 'MANAGER' AND IsActive = 1)))
+            THROW 50248, 'The target is not in the manager own branch.', 1;
 
         EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = @CorrelationID;
         BEGIN TRANSACTION;

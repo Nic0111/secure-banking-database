@@ -33,7 +33,7 @@ BEGIN
     VALUES
       ('S00001', 'BANK_MANAGER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '11500.00')),
       ('S00002', 'BANK_MANAGER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '10900.00')),
-      ('S00003', 'DBA', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '9200.00')),
+      ('S00003', 'DBA', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '9200.00')),
       ('S00004', 'BANK_OFFICER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5200.00')),
       ('S00005', 'BANK_OFFICER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5400.00')),
       ('S00006', 'BANK_OFFICER', 'B0003', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5100.00')),

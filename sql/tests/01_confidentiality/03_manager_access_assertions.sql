@@ -2,7 +2,7 @@
 USE [SmartBankDB];
 GO
 
--- Each manager sees their own profile separately and this procedure returns officers and the DBA.
+-- Each manager sees their own profile separately and this procedure returns the officers and the DBA in the manager's own branch.
 DECLARE @ManagerStaffID char(6) =
     CASE ORIGINAL_LOGIN()
         WHEN N'sb_manager_daniel' THEN 'S00001'
@@ -28,8 +28,31 @@ IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @ManagerStaffID)
 IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @PeerManagerStaffID)
     THROW 51111, 'FAIL: a manager can view the other manager''s employment profile.', 1;
 
-IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
+DECLARE @OwnBranchOfficerID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00004'
+        WHEN N'sb_manager_siti' THEN 'S00005'
+    END;
+DECLARE @OtherBranchOfficerID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00005'
+        WHEN N'sb_manager_siti' THEN 'S00004'
+    END;
+
+-- The DBA is assigned to B0001: Daniel must see the DBA profile, Siti must not.
+IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
+    AND NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
     THROW 51115, 'FAIL: the manager staff-list procedure omitted the DBA profile.', 1;
+
+IF ORIGINAL_LOGIN() = N'sb_manager_siti'
+    AND EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
+    THROW 51119, 'FAIL: a manager can view a DBA assigned to another branch.', 1;
+
+IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @OwnBranchOfficerID AND Position = 'BANK_OFFICER')
+    THROW 51124, 'FAIL: the manager staff-list procedure omitted an own-branch officer.', 1;
+
+IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @OtherBranchOfficerID)
+    THROW 51118, 'FAIL: a manager can view an officer assigned to another branch.', 1;
 
 EXEC api.usp_GetMyStaffProfile;
 SELECT * FROM #VisibleStaff ORDER BY Position, StaffID;
