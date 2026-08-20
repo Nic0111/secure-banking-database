@@ -747,7 +747,7 @@ def build_report():
     doc.add_heading("Permission precedence and controlled module model", level=2)
     add_body(
         doc,
-        "The explicit schema DENY to rl_dba overrides its inherited public access, while controlled procedures execute as owner. Ownership chaining allows the procedure to reach protected tables; the caller still needs EXECUTE on that exact module and cannot reuse the owner's authority for ad hoc SQL. Procedures independently test ORIGINAL_LOGIN(), role type, row ownership, status, amount and PIN before any write.",
+        "The explicit schema DENY to rl_dba overrides its inherited public access, while controlled procedures execute as owner. Ownership chaining allows the procedure to reach protected tables; the caller still needs EXECUTE on that exact module and cannot reuse the owner's authority for ad hoc SQL. Procedures independently test ORIGINAL_LOGIN(), role type, row ownership, status, amount and PIN before any write. SQL logins are server-level principals, so their creation stays with the server administrator: a manager's usp_ManagerAddOfficer creates only the employment record, and the login, database user, role membership and identity mapping are wired afterwards by sa (sql/demo/02_integrity/07_sa_wires_new_officer_login.sql). The DBA role is deliberately scoped to database-level DDL and cannot create or alter logins.",
     )
     add_code(doc, "DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::core TO public;\nGRANT EXECUTE ON OBJECT::api.usp_PerformTransaction TO rl_customer;\nDENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::core TO rl_dba;")
 

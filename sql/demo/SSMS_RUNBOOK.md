@@ -61,6 +61,11 @@ Run these in order. Use the named login in the file header.
 5. `02_integrity/05_customer_transactions.sql` as `sb_customer_amelia`
 6. `02_integrity/06_all_valid_invalid_manipulations_logged.sql` as
    `sb_auditor_noor`.
+7. `02_integrity/07_sa_wires_new_officer_login.sql` as `sa`. It creates the
+   SQL login for the officer hired in step 2. Afterwards, connect in a
+   fresh SSMS window as `sb_officer_demo` (password `SBan!Off_2026#Demo`)
+   and run `api.usp_GetMyStaffProfile` to show the new login's own profile,
+   then `SELECT * FROM core.Staff` to show the denial.
 
 If asked to demonstrate permission changes, run
 `90_permission_change_extension.sql` as `sa`. It creates and removes one

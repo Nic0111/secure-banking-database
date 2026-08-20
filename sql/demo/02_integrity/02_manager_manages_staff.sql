@@ -9,6 +9,13 @@ EXEC api.usp_ManagerUpdateOfficer
 EXEC api.usp_ManagerUpdateOfficer
     @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
     @BranchID = 'B0001', @Salary = 9200.00;
+
+-- The manager hires a new officer into their own branch through the approved
+-- procedure. The officer's SQL login is wired separately by the server
+-- administrator (see 07_sa_wires_new_officer_login.sql).
+EXEC api.usp_ManagerAddOfficer
+    @StaffID = 'S00008', @StaffName = N'Demo Officer', @Phone = '012-3101008',
+    @Salary = 5200.00;
 EXEC api.usp_ManagerGetStaffProfiles;
 
 -- Expected result: validation error. A manager cannot change another manager.
