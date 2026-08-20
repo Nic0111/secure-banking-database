@@ -35,7 +35,7 @@ IF @BalanceUpdateDenied = 0
 DECLARE @SalaryUpdateDenied bit = 0;
 BEGIN TRY
     BEGIN TRANSACTION;
-    UPDATE core.StaffEmployment SET SalaryCipher = 0x00 WHERE StaffID IN ('S00003', 'S00004');
+    UPDATE core.StaffEmployment SET SalaryCipher = 0x00 WHERE StaffID IN ('S00004', 'S00005');
     ROLLBACK TRANSACTION;
 END TRY
 BEGIN CATCH

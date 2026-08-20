@@ -714,11 +714,11 @@ def build_report():
         "Each demonstration actor connects through a distinct SQL Server login and mapped database user. Password policy enforcement is enabled with CHECK_POLICY = ON; default database is SmartBankDB; guest CONNECT is revoked. Fictitious coursework passwords, recovery secrets and the transaction PIN are declared as SQLCMD variables in sql/deploy.sql for reproducible one-command setup; the supplied sa credential remains external. CHECK_EXPIRATION is disabled only to keep coursework demonstrations deterministic; a production identity service should enforce rotation or managed authentication.",
     )
     accounts = [
-        ("sb_dba_aisha", "DBA", "S00001", "rl_authenticated, rl_dba"),
-        ("sb_manager_daniel", "Manager", "S00002", "rl_authenticated, rl_manager"),
-        ("sb_manager_siti", "Manager", "S00007", "rl_authenticated, rl_manager"),
-        ("sb_officer_farid", "Officer", "S00003", "rl_authenticated, rl_officer"),
-        ("sb_officer_priya", "Officer", "S00004", "rl_authenticated, rl_officer"),
+        ("sb_dba_aisha", "DBA", "S00003", "rl_authenticated, rl_dba"),
+        ("sb_manager_daniel", "Manager", "S00001", "rl_authenticated, rl_manager"),
+        ("sb_manager_siti", "Manager", "S00002", "rl_authenticated, rl_manager"),
+        ("sb_officer_farid", "Officer", "S00004", "rl_authenticated, rl_officer"),
+        ("sb_officer_priya", "Officer", "S00005", "rl_authenticated, rl_officer"),
         ("sb_customer_amelia", "Customer", "C00001", "rl_authenticated, rl_customer"),
         ("sb_customer_hafiz", "Customer", "C00002", "rl_authenticated, rl_customer"),
         ("sb_auditor_noor", "Auditor", "No business row", "rl_authenticated, rl_security_auditor; SmartBankAuditReader"),
@@ -1002,7 +1002,7 @@ def build_report():
     add_table(doc, "Table 19. Consolidated verification results", ["Test group", "Acceptance condition", "Result"], tests, [2150, 5710, 1500], 8.1)
     add_body(
         doc,
-        "The retained pre-extension validation output was ALL 11 VALIDATION GROUPS PASSED and reported 6 staff, 12 customers, 18 accounts, 50 transactions, active RLS policies and two ONLINE validation databases: SmartBankDB_RestoreValidation and SmartBankDB_PITR. The second-manager extension adds Siti Aminah as staff S00007 and requires a fresh authenticated run of sql/tests/02_integrity/02_manager_staff_assertions.sql as both managers before the final evidence snapshot is presented.",
+        "The retained pre-extension validation output was ALL 11 VALIDATION GROUPS PASSED and reported 6 staff, 12 customers, 18 accounts, 50 transactions, active RLS policies and two ONLINE validation databases: SmartBankDB_RestoreValidation and SmartBankDB_PITR. The second-manager extension adds Siti Aminah as staff S00002 and requires a fresh authenticated run of sql/tests/02_integrity/02_manager_staff_assertions.sql as both managers before the final evidence snapshot is presented.",
     )
 
     doc.add_heading("Security Evaluation and Limitations", level=1)

@@ -41,7 +41,7 @@ IF NOT EXISTS
     WHERE LoginName = N'sb_manager_siti'
       AND DatabaseUserName = N'sb_manager_siti'
       AND UserType = 'MANAGER'
-      AND StaffID = 'S00007'
+      AND StaffID = 'S00002'
       AND IsActive = 1
 )
     THROW 51013, 'FAIL: the second manager identity mapping is missing or inactive.', 1;

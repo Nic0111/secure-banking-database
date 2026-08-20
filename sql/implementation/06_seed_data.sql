@@ -21,23 +21,23 @@ BEGIN
     OPEN SYMMETRIC KEY SmartBank_Column_Key DECRYPTION BY CERTIFICATE SmartBank_Column_Certificate;
 
     INSERT core.Staff (StaffID, StaffName, Phone)
-    VALUES ('S00001', N'Aisha Rahman', '012-3101001'),
-           ('S00002', N'Daniel Wong', '012-3101002'),
-           ('S00003', N'Farid Iskandar', '012-3101003'),
-           ('S00004', N'Priya Nair', '012-3101004'),
-           ('S00005', N'Lim Jia Wei', '012-3101005'),
-           ('S00006', N'Nur Iman', '012-3101006'),
-           ('S00007', N'Siti Aminah', '012-3101007');
+    VALUES ('S00001', N'Daniel Wong', '012-3101001'),
+           ('S00002', N'Siti Aminah', '012-3101002'),
+           ('S00003', N'Aisha Rahman', '012-3101003'),
+           ('S00004', N'Farid Iskandar', '012-3101004'),
+           ('S00005', N'Priya Nair', '012-3101005'),
+           ('S00006', N'Lim Jia Wei', '012-3101006'),
+           ('S00007', N'Nur Iman', '012-3101007');
 
     INSERT core.StaffEmployment (StaffID, Position, BranchID, SalaryCipher)
     VALUES
-      ('S00001', 'DBA', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '9200.00')),
-      ('S00002', 'BANK_MANAGER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '11500.00')),
-      ('S00003', 'BANK_OFFICER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5200.00')),
-      ('S00004', 'BANK_OFFICER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5400.00')),
-      ('S00005', 'BANK_OFFICER', 'B0003', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5100.00')),
-      ('S00006', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00')),
-      ('S00007', 'BANK_MANAGER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '10900.00'));
+      ('S00001', 'BANK_MANAGER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '11500.00')),
+      ('S00002', 'BANK_MANAGER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '10900.00')),
+      ('S00003', 'DBA', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '9200.00')),
+      ('S00004', 'BANK_OFFICER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5200.00')),
+      ('S00005', 'BANK_OFFICER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5400.00')),
+      ('S00006', 'BANK_OFFICER', 'B0003', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5100.00')),
+      ('S00007', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00'));
 
     CLOSE SYMMETRIC KEY SmartBank_Column_Key;
 END;
@@ -132,11 +132,11 @@ GO
 -- Map the demonstration logins to their identities.
 MERGE sec.PrincipalMap AS target
 USING (VALUES
-    (CONVERT(sysname, N'sb_dba_aisha'), CONVERT(sysname, N'sb_dba_aisha'), 'DBA', 'S00001', CONVERT(char(6), NULL)),
-    (CONVERT(sysname, N'sb_manager_daniel'), CONVERT(sysname, N'sb_manager_daniel'), 'MANAGER', 'S00002', CONVERT(char(6), NULL)),
-    (CONVERT(sysname, N'sb_manager_siti'), CONVERT(sysname, N'sb_manager_siti'), 'MANAGER', 'S00007', CONVERT(char(6), NULL)),
-    (CONVERT(sysname, N'sb_officer_farid'), CONVERT(sysname, N'sb_officer_farid'), 'OFFICER', 'S00003', CONVERT(char(6), NULL)),
-    (CONVERT(sysname, N'sb_officer_priya'), CONVERT(sysname, N'sb_officer_priya'), 'OFFICER', 'S00004', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_dba_aisha'), CONVERT(sysname, N'sb_dba_aisha'), 'DBA', 'S00003', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_manager_daniel'), CONVERT(sysname, N'sb_manager_daniel'), 'MANAGER', 'S00001', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_manager_siti'), CONVERT(sysname, N'sb_manager_siti'), 'MANAGER', 'S00002', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_officer_farid'), CONVERT(sysname, N'sb_officer_farid'), 'OFFICER', 'S00004', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_officer_priya'), CONVERT(sysname, N'sb_officer_priya'), 'OFFICER', 'S00005', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_customer_amelia'), CONVERT(sysname, N'sb_customer_amelia'), 'CUSTOMER', CONVERT(char(6), NULL), 'C00001'),
     (CONVERT(sysname, N'sb_customer_hafiz'), CONVERT(sysname, N'sb_customer_hafiz'), 'CUSTOMER', CONVERT(char(6), NULL), 'C00002'),
     (CONVERT(sysname, N'sb_auditor_noor'), CONVERT(sysname, N'sb_auditor_noor'), 'AUDITOR', CONVERT(char(6), NULL), CONVERT(char(6), NULL))

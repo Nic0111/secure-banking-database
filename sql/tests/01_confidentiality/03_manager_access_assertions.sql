@@ -5,13 +5,13 @@ GO
 -- Each manager sees their own profile separately and this procedure returns officers and the DBA.
 DECLARE @ManagerStaffID char(6) =
     CASE ORIGINAL_LOGIN()
-        WHEN N'sb_manager_daniel' THEN 'S00002'
-        WHEN N'sb_manager_siti' THEN 'S00007'
+        WHEN N'sb_manager_daniel' THEN 'S00001'
+        WHEN N'sb_manager_siti' THEN 'S00002'
     END;
 DECLARE @PeerManagerStaffID char(6) =
     CASE ORIGINAL_LOGIN()
-        WHEN N'sb_manager_daniel' THEN 'S00007'
-        WHEN N'sb_manager_siti' THEN 'S00002'
+        WHEN N'sb_manager_daniel' THEN 'S00002'
+        WHEN N'sb_manager_siti' THEN 'S00001'
     END;
 IF @ManagerStaffID IS NULL OR @PeerManagerStaffID IS NULL
     THROW 51110, 'Run this test only as a configured manager login.', 1;
@@ -28,7 +28,7 @@ IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @ManagerStaffID)
 IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @PeerManagerStaffID)
     THROW 51111, 'FAIL: a manager can view the other manager''s employment profile.', 1;
 
-IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00001' AND Position = 'DBA')
+IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
     THROW 51115, 'FAIL: the manager staff-list procedure omitted the DBA profile.', 1;
 
 EXEC api.usp_GetMyStaffProfile;

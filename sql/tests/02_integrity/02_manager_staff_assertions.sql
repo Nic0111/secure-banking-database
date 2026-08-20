@@ -4,11 +4,11 @@ GO
 
 -- Managers can update officer and DBA records only through the approved procedure.
 EXEC api.usp_ManagerUpdateOfficer
-    @StaffID = 'S00003', @StaffName = N'Farid Iskandar', @Phone = '012-3101003',
+    @StaffID = 'S00004', @StaffName = N'Farid Iskandar', @Phone = '012-3101004',
     @BranchID = 'B0001', @Salary = 5300.00;
 
 EXEC api.usp_ManagerUpdateOfficer
-    @StaffID = 'S00001', @StaffName = N'Aisha Rahman', @Phone = '012-3101001',
+    @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
     @BranchID = 'B0004', @Salary = 9200.00;
 GO
 
@@ -18,14 +18,14 @@ DECLARE @PeerManagerStaffID char(6), @PeerManagerName nvarchar(100),
         @PeerManagerSalary decimal(19, 2);
 IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
 BEGIN
-    SELECT @PeerManagerStaffID = 'S00007', @PeerManagerName = N'Siti Aminah',
-           @PeerManagerPhone = '012-3101007', @PeerManagerBranchID = 'B0002',
+    SELECT @PeerManagerStaffID = 'S00002', @PeerManagerName = N'Siti Aminah',
+           @PeerManagerPhone = '012-3101002', @PeerManagerBranchID = 'B0002',
            @PeerManagerSalary = 10900.00;
 END;
 ELSE IF ORIGINAL_LOGIN() = N'sb_manager_siti'
 BEGIN
-    SELECT @PeerManagerStaffID = 'S00002', @PeerManagerName = N'Daniel Wong',
-           @PeerManagerPhone = '012-3101002', @PeerManagerBranchID = 'B0001',
+    SELECT @PeerManagerStaffID = 'S00001', @PeerManagerName = N'Daniel Wong',
+           @PeerManagerPhone = '012-3101001', @PeerManagerBranchID = 'B0001',
            @PeerManagerSalary = 11500.00;
 END;
 
@@ -84,7 +84,7 @@ GO
 DECLARE @SalaryUpdateDenied bit = 0;
 BEGIN TRY
     BEGIN TRANSACTION;
-    UPDATE core.StaffEmployment SET SalaryCipher = 0x00 WHERE StaffID = 'S00003';
+    UPDATE core.StaffEmployment SET SalaryCipher = 0x00 WHERE StaffID = 'S00004';
     ROLLBACK TRANSACTION;
 END TRY
 BEGIN CATCH
