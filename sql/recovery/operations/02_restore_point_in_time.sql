@@ -39,12 +39,11 @@ IF DB_ID(N'SmartBankDB_PITR') IS NOT NULL
 DECLARE @SourceDatabase sysname = N'SmartBankDB';
 DECLARE @TargetDatabase sysname = N'SmartBankDB_PITR';
 DECLARE @MarkerID uniqueidentifier, @MarkerTimeUtc datetime2(3),
-        @MarkerTimeServer datetime2(3), @ExpectedRowsJson nvarchar(max);
+        @MarkerTimeServer datetime2(3);
 SELECT TOP (1)
        @MarkerID = MarkerID,
        @MarkerTimeUtc = MarkerTimeUtc,
-       @MarkerTimeServer = MarkerTimeServer,
-       @ExpectedRowsJson = ExpectedRecoveryRows
+       @MarkerTimeServer = MarkerTimeServer
 FROM SmartBankDB.ops.RecoveryMarker
 WHERE MarkerLabel LIKE N'PITR:%'
 ORDER BY CreatedAt DESC;
@@ -57,45 +56,15 @@ IF @MarkerID IS NULL OR @MarkerTimeServer IS NULL
 -- the lecturer's later accidental change.
 DECLARE @StopAt datetime = DATEADD(MILLISECOND, -3, CONVERT(datetime, @MarkerTimeServer));
 
-CREATE TABLE #ExpectedRows
-(
-    RecoveryID int NOT NULL PRIMARY KEY,
-    EvidenceText nvarchar(200) NOT NULL,
-    CreatedAt datetime2(3) NOT NULL
-);
-INSERT #ExpectedRows (RecoveryID, EvidenceText, CreatedAt)
-SELECT RecoveryID, EvidenceText, CreatedAt
-FROM OPENJSON(@ExpectedRowsJson)
-WITH
-(
-    RecoveryID int '$.RecoveryID',
-    EvidenceText nvarchar(200) '$.EvidenceText',
-    CreatedAt datetime2(3) '$.CreatedAt'
-);
-IF NOT EXISTS (SELECT 1 FROM #ExpectedRows)
-    THROW 52105, 'The latest PITR marker contains no expected recovery rows.', 1;
-
-IF NOT EXISTS
-   (
-       SELECT RecoveryID, EvidenceText, CreatedAt FROM #ExpectedRows
-       EXCEPT
-       SELECT RecoveryID, EvidenceText, CreatedAt FROM SmartBankDB.demo.RecoveryTarget
-   )
-   AND NOT EXISTS
-   (
-       SELECT RecoveryID, EvidenceText, CreatedAt FROM SmartBankDB.demo.RecoveryTarget
-       EXCEPT
-       SELECT RecoveryID, EvidenceText, CreatedAt FROM #ExpectedRows
-   )
-    THROW 52106, 'The source still matches the marker. Perform the controlled accidental change first.', 1;
-
 DECLARE @FullSetID int, @FullFile nvarchar(4000),
-        @FullLastLsn numeric(25, 0), @FullCheckpointLsn numeric(25, 0);
+        @FullLastLsn numeric(25, 0), @FullCheckpointLsn numeric(25, 0),
+        @FullRecoveryForkGuid uniqueidentifier;
 SELECT TOP (1)
        @FullSetID = backupset.backup_set_id,
        @FullFile = media.physical_device_name,
        @FullLastLsn = backupset.last_lsn,
-       @FullCheckpointLsn = backupset.checkpoint_lsn
+       @FullCheckpointLsn = backupset.checkpoint_lsn,
+       @FullRecoveryForkGuid = backupset.last_recovery_fork_guid
 FROM msdb.dbo.backupset AS backupset
 INNER JOIN msdb.dbo.backupmediafamily AS media
     ON media.media_set_id = backupset.media_set_id
@@ -139,6 +108,9 @@ SELECT TOP (1) @FinalLogSetID = backup_set_id
 FROM msdb.dbo.backupset
 WHERE database_name = @SourceDatabase AND type = 'L'
   AND backup_finish_date >= @StopAt AND last_lsn > @BaseLastLsn
+  AND database_backup_lsn = @FullCheckpointLsn
+  AND first_recovery_fork_guid = @FullRecoveryForkGuid
+  AND last_recovery_fork_guid = @FullRecoveryForkGuid
 ORDER BY backup_finish_date, backup_set_id;
 IF @FinalLogSetID IS NULL
     THROW 52110, 'No transaction-log backup covers STOPAT. Run the post-change log scenario.', 1;
@@ -165,6 +137,9 @@ INNER JOIN msdb.dbo.backupmediafamily AS media
 WHERE backupset.database_name = @SourceDatabase AND backupset.type = 'L'
   AND backupset.last_lsn > @BaseLastLsn
   AND backupset.backup_set_id <= @FinalLogSetID
+  AND backupset.database_backup_lsn = @FullCheckpointLsn
+  AND backupset.first_recovery_fork_guid = @FullRecoveryForkGuid
+  AND backupset.last_recovery_fork_guid = @FullRecoveryForkGuid
 ORDER BY backupset.first_lsn, backupset.backup_start_date, backupset.backup_set_id;
 
 IF NOT EXISTS (SELECT 1 FROM #LogChain WHERE IsFinal = 1)

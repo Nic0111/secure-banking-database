@@ -41,17 +41,17 @@ The validation requires an ONLINE restored database, TDE, a service-master-key-p
 
 Run the following on the primary instance in this exact order:
 
-1. `scenarios/01_pitr_capture_marker.sql` captures a pre-accident log backup, the expected recovery rows as JSON, and both UTC and SQL Server-local marker times.
-2. Ask the lecturer to execute one or both controlled accidents individually:
+1. `scenarios/01_pitr_capture_marker.sql` captures a pre-accident log backup and both UTC and SQL Server-local marker times. The marker applies to the entire database.
+2. Ask the lecturer to update or delete one or two records in an audited business or demo table. Record the schema, table and key so the same rows can be shown after recovery. The safe fallback is:
 
    ```sql
    DELETE SmartBankDB.demo.RecoveryTarget WHERE RecoveryID = 1;
    DELETE SmartBankDB.demo.RecoveryTarget WHERE RecoveryID = 2;
    ```
 
-3. `scenarios/02_pitr_capture_post_change_log.sql` refuses to continue unless the live rows differ from the marker and the accident is present in `audit.DmlAudit`. It then captures and verifies the closing encrypted log backup.
+3. `scenarios/02_pitr_capture_post_change_log.sql` refuses to continue unless an audited DELETE or UPDATE is present after the marker. It then captures and verifies the closing encrypted log backup.
 4. `operations/02_restore_point_in_time.sql` selects the eligible full backup, optional differential and ordered log chain from `msdb`, verifies every selected medium, and restores a separate `SmartBankDB_PITR` database using `STOPAT`.
-5. `validation/02_validate_pitr_restore.sql` compares the restored rows and values exactly with the marker JSON, runs integrity checks and proves that the damaged live copy differs from the recovered copy.
+5. `validation/02_validate_pitr_restore.sql` checks the recovered copy's TDE encryption, integrity, ledger chain and account balances, and shows the audited source change. Use `sql/demo/03_availability/01_accidental_changes_recoverable.sql` to compare the exact live and recovered records selected in step 2.
 
 The source database remains online throughout the restore because recovery targets a separate database. The scheduled five-minute transaction-log interval defines the normal-operation RPO; the explicit pre/post log backups make the classroom drill deterministic and do not replace the schedule.
 

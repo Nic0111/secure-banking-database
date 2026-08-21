@@ -104,12 +104,15 @@ database online for inspection.
 On the primary instance as `sa`:
 
 1. Run `recovery/scenarios/01_pitr_capture_marker.sql`.
-2. Let the lecturer delete one or two rows from `demo.RecoveryTarget`.
+2. Let the lecturer delete or update one or two records in an audited business or
+   demo table. Note the table name and record key; you will use them in the
+   side-by-side query. `demo.RecoveryTarget` rows 1 and 2 remain a safe fallback.
 3. Run `recovery/scenarios/02_pitr_capture_post_change_log.sql`.
 4. Run `recovery/operations/02_restore_point_in_time.sql`.
 5. Run `recovery/validation/02_validate_pitr_restore.sql`.
 6. Return to `03_availability/01_accidental_changes_recoverable.sql` for the
-   short side-by-side presentation of live and recovered rows.
+   short side-by-side presentation. Replace its example table and filter with the
+   table and records chosen in step 2.
 
 The source database stays online. The restored copy is `SmartBankDB_PITR`.
 

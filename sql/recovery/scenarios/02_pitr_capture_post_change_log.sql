@@ -3,21 +3,21 @@ RECOVERY MODULE:
 Scenario - Validate the accident and close the PITR log chain
 
 PURPOSE:
-Refuse to continue until the live recovery target differs from its marker and the
-change is audited, then create the verified encrypted log backup needed by restore.
+Confirm an audited data change happened after the marker, then create the verified
+encrypted log backup needed by restore.
 
 RUN AS:
-sa or another sysadmin after the lecturer's controlled DELETE statement(s).
+sa or another sysadmin after the lecturer's controlled UPDATE or DELETE statement(s).
 
 PRECONDITIONS:
-scenarios/01_pitr_capture_marker.sql has run and demo.RecoveryTarget was changed.
+scenarios/01_pitr_capture_marker.sql has run and an audited table was changed.
 
 DATABASE CHANGES:
 Creates one verified encrypted transaction-log backup. It does not repair data.
 
 PASS CONDITION:
-The source-marker difference and corresponding DML audit row are visible, and the
-post-change log backup succeeds and verifies.
+The corresponding DML audit row is visible, and the post-change log backup succeeds
+and verifies.
 */
 USE [SmartBankDB];
 GO
@@ -29,78 +29,35 @@ IF IS_SRVROLEMEMBER(N'sysadmin') <> 1
     THROW 52210, 'Run the post-change log scenario as sa or another sysadmin.', 1;
 
 DECLARE @MarkerID uniqueidentifier, @MarkerTimeUtc datetime2(3),
-        @MarkerTimeServer datetime2(3), @ExpectedRowsJson nvarchar(max);
+        @MarkerTimeServer datetime2(3);
 SELECT TOP (1)
        @MarkerID = MarkerID,
        @MarkerTimeUtc = MarkerTimeUtc,
-       @MarkerTimeServer = MarkerTimeServer,
-       @ExpectedRowsJson = ExpectedRecoveryRows
+       @MarkerTimeServer = MarkerTimeServer
 FROM ops.RecoveryMarker
 WHERE MarkerLabel LIKE N'PITR:%'
 ORDER BY CreatedAt DESC;
 IF @MarkerID IS NULL
     THROW 52211, 'No PITR marker exists. Run scenarios/01_pitr_capture_marker.sql.', 1;
 
-CREATE TABLE #ExpectedRows
-(
-    RecoveryID int NOT NULL PRIMARY KEY,
-    EvidenceText nvarchar(200) NOT NULL,
-    CreatedAt datetime2(3) NOT NULL
-);
-INSERT #ExpectedRows (RecoveryID, EvidenceText, CreatedAt)
-SELECT RecoveryID, EvidenceText, CreatedAt
-FROM OPENJSON(@ExpectedRowsJson)
-WITH
-(
-    RecoveryID int '$.RecoveryID',
-    EvidenceText nvarchar(200) '$.EvidenceText',
-    CreatedAt datetime2(3) '$.CreatedAt'
-);
-
-CREATE TABLE #SourceDifference
-(
-    DifferenceType varchar(20) NOT NULL,
-    RecoveryID int NOT NULL,
-    EvidenceText nvarchar(200) NOT NULL,
-    CreatedAt datetime2(3) NOT NULL
-);
-INSERT #SourceDifference (DifferenceType, RecoveryID, EvidenceText, CreatedAt)
-SELECT N'MISSING_OR_CHANGED', RecoveryID, EvidenceText, CreatedAt
-FROM
-(
-    SELECT RecoveryID, EvidenceText, CreatedAt FROM #ExpectedRows
-    EXCEPT
-    SELECT RecoveryID, EvidenceText, CreatedAt FROM demo.RecoveryTarget
-) AS missingRows;
-INSERT #SourceDifference (DifferenceType, RecoveryID, EvidenceText, CreatedAt)
-SELECT N'EXTRA_OR_CHANGED', RecoveryID, EvidenceText, CreatedAt
-FROM
-(
-    SELECT RecoveryID, EvidenceText, CreatedAt FROM demo.RecoveryTarget
-    EXCEPT
-    SELECT RecoveryID, EvidenceText, CreatedAt FROM #ExpectedRows
-) AS extraRows;
-
-IF NOT EXISTS (SELECT 1 FROM #SourceDifference)
-    THROW 52212, 'The live rows still match the marker. Perform the controlled accidental change first.', 1;
+-- Confirm the change was recorded by the application's DML audit trail.
 IF NOT EXISTS
    (
        SELECT 1 FROM audit.DmlAudit
-       WHERE SchemaName = N'demo' AND TableName = N'RecoveryTarget'
-         AND ActionType IN ('DELETE', 'UPDATE') AND EventTime >= @MarkerTimeUtc
+       WHERE ActionType IN ('DELETE', 'UPDATE')
+         AND EventTime > @MarkerTimeUtc
    )
-    THROW 52213, 'The source changed, but no corresponding RecoveryTarget DML audit evidence was found.', 1;
+    THROW 52212, 'No audited DELETE or UPDATE exists after the marker. Perform the lecturer-selected change first.', 1;
 
-SELECT N'Live source difference from marker' AS Evidence, *
-FROM #SourceDifference ORDER BY RecoveryID, DifferenceType;
-SELECT TOP (20) N'Audited accidental change' AS Evidence,
-       AuditID, EventTime, ActionType, ActorLogin, AffectedRowCount,
+-- Show the changes that the point-in-time restore will undo.
+SELECT TOP (20) AuditID, EventTime, SchemaName, TableName, ActionType, ActorLogin, AffectedRowCount,
        CorrelationID, OldValues, NewValues
 FROM audit.DmlAudit
-WHERE SchemaName = N'demo' AND TableName = N'RecoveryTarget'
-  AND ActionType IN ('DELETE', 'UPDATE') AND EventTime >= @MarkerTimeUtc
+WHERE ActionType IN ('DELETE', 'UPDATE')
+  AND EventTime > @MarkerTimeUtc
 ORDER BY EventTime DESC, AuditID DESC;
 
+-- Take the closing log backup after the change.
 DECLARE @PreviousBackupRunID bigint = ISNULL((SELECT MAX(BackupRunID) FROM ops.BackupRun), 0);
 EXEC ops.usp_RunBackup @BackupType = 'L';
 
@@ -117,11 +74,13 @@ ORDER BY BackupRunID DESC;
 IF @PostChangeBackupRunID IS NULL
     THROW 52214, 'The post-change encrypted log backup did not produce verified evidence.', 1;
 
+-- Report the audit and backup evidence for the restore step.
 SELECT N'PASS' AS ScenarioResult,
        @MarkerID AS MarkerID,
        @MarkerTimeUtc AS MarkerTimeUtc,
        @MarkerTimeServer AS MarkerTimeServer,
-       (SELECT COUNT(*) FROM #SourceDifference) AS DifferenceRows,
+       (SELECT COUNT(*) FROM audit.DmlAudit
+        WHERE ActionType IN ('DELETE', 'UPDATE') AND EventTime > @MarkerTimeUtc) AS AuditedChangeCount,
        @PostChangeBackupRunID AS PostChangeBackupRunID,
        @PostChangeBackupFile AS PostChangeBackupFile,
        @PostChangeFinishedAt AS PostChangeFinishedAtUtc;
