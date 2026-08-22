@@ -1,4 +1,8 @@
 :on error exit
+
+-- Set the restored database to validate.
+:setvar TargetDatabaseName "SmartBankDB_RestoreDemo"
+
 /*
 RECOVERY MODULE:
 Validation - Cross-instance encrypted full restore

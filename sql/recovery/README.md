@@ -37,6 +37,14 @@ sqlcmd -S "<second-instance>" -U sa -P "<sa-password>" -C -b -i "sql/recovery/va
 
 The validation requires an ONLINE restored database, TDE, a service-master-key-protected database master key, non-empty core data, successful column decryption without displaying PII, `DBCC CHECKDB`, a valid transaction hash chain and reconciled account balances.
 
+The backup contains database users and their role memberships, but SQL Server logins are server-level objects and are not included. To demonstrate the restored database through the standard SmartBank logins, run `utilities/03_restore_demo_logins.sql` once on a clean target instance:
+
+```powershell
+sqlcmd -S "<second-instance>" -U sa -P "<sa-password>" -C -b -i "sql/recovery/utilities/03_restore_demo_logins.sql"
+```
+
+The script already contains the same demonstration passwords as `deploy.sql`. Change `TargetDatabaseName` at its top if required. It creates new target-server login SIDs and maps the restored database users to them; it does not alter restored data or permissions. Do not rerun it where those logins already exist.
+
 ## 2. Point-in-time recovery drill
 
 Run the following on the primary instance in this exact order:

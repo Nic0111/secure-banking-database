@@ -28,8 +28,15 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
-IF IS_SRVROLEMEMBER(N'sysadmin') <> 1
-    THROW 52000, 'Run the encrypted restore as sa or another sysadmin.', 1;
+:setvar TargetDatabaseName "SmartBankDB_RestoreDemo"
+:setvar SourceFullBackupFile "C:\Program Files\Microsoft SQL Server\MSSQL17.DBS_DEMO\MSSQL\Backup\SmartBankRestore\SmartBankDB_FULL_20260823_010000.bak"
+:setvar TargetDataFile "C:\Program Files\Microsoft SQL Server\MSSQL17.DBS_DEMO\MSSQL\DATA\SmartBankDB_RestoreDemo.mdf"
+:setvar TargetLogFile "C:\Program Files\Microsoft SQL Server\MSSQL17.DBS_DEMO\MSSQL\DATA\SmartBankDB_RestoreDemo_log.ldf"
+:setvar TargetCertificateDirectory "C:\Program Files\Microsoft SQL Server\MSSQL17.DBS_DEMO\MSSQL\Backup\SmartBankRestore\Keys"
+:setvar PathSeparator "\"
+:setvar TargetMasterKeyPassword "SBank!MasterKey_2026#LocalOnly"
+:setvar CertificateBackupPassword "SBank!Certificate_2026#LocalOnly"
+:setvar RestoredDatabaseMasterKeyPassword "SBank!MasterKey_2026#LocalOnly"
 
 DECLARE @TargetDatabase sysname = N'$(TargetDatabaseName)';
 DECLARE @BackupFile nvarchar(4000) = N'$(SourceFullBackupFile)';
