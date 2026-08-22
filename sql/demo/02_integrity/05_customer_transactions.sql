@@ -1,5 +1,6 @@
 -- Run as: sb_customer_amelia in SSMS SQLCMD mode.
--- Before running, add a local :setvar DemoTransactionPin "..." line. Do not save it.
+:setvar DemoTransactionPin "482731"
+
 USE [SmartBankDB];
 GO
 
