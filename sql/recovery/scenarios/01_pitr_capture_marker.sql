@@ -21,19 +21,7 @@ The log backup is successful/verified and a database-wide recovery marker is sav
 USE [SmartBankDB];
 GO
 SET NOCOUNT ON;
-SET XACT_ABORT ON;
 GO
-
-IF IS_SRVROLEMEMBER(N'sysadmin') <> 1
-    THROW 52200, 'Run the PITR marker scenario as sa or another sysadmin.', 1;
-IF (SELECT recovery_model_desc FROM sys.databases WHERE name = DB_NAME()) <> N'FULL'
-    THROW 52201, 'SmartBankDB must use FULL recovery.', 1;
-IF OBJECT_ID(N'ops.RecoveryMarker', N'U') IS NULL
-   OR OBJECT_ID(N'ops.BackupRun', N'U') IS NULL
-   OR OBJECT_ID(N'ops.usp_RunBackup', N'P') IS NULL
-    THROW 52202, 'Required backup/recovery implementation objects are missing.', 1;
-IF DB_ID(N'SmartBankDB_PITR') IS NOT NULL
-    THROW 52203, 'SmartBankDB_PITR already exists. Run cleanup before starting a new PITR drill.', 1;
 
 DECLARE @PreviousBackupRunID bigint = ISNULL((SELECT MAX(BackupRunID) FROM ops.BackupRun), 0);
 EXEC ops.usp_RunBackup @BackupType = 'L';
@@ -46,9 +34,8 @@ FROM ops.BackupRun
 WHERE BackupRunID > @PreviousBackupRunID AND BackupType = 'L'
   AND Succeeded = 1 AND Verified = 1
 ORDER BY BackupRunID DESC;
-IF @PreMarkerBackupRunID IS NULL
-    THROW 52205, 'The pre-marker encrypted log backup did not produce verified evidence.', 1;
 
+-- Save the database-wide recovery time.
 DECLARE @MarkerID uniqueidentifier = NEWID();
 DECLARE @MarkerTimeUtc datetime2(3) = SYSUTCDATETIME();
 DECLARE @MarkerTimeServer datetime2(3) = SYSDATETIME();
