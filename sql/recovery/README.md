@@ -57,13 +57,13 @@ The source database remains online throughout the restore because recovery targe
 
 ## 3. Temporal row-recovery drill
 
-Run `scenarios/03_temporal_row_recovery.sql` on the primary instance. It assigns one correlation ID, records the pre-change time, makes a controlled accidental change to customer `C00012`, retrieves the earlier row with `FOR SYSTEM_TIME AS OF`, and restores all customer columns. It contains a best-effort safety restoration if the temporal step fails.
+Run Step 1 of `scenarios/03_temporal_row_recovery.sql` on the primary instance, keep that SSMS window open, let the lecturer manually update customer `C00012` in another window, then run Step 2. The script retrieves the version at its saved pre-change time with `FOR SYSTEM_TIME AS OF` and restores all customer columns.
 
-Then run `validation/03_validate_temporal_recovery.sql`. It uses the correlation ID retained in DML audit rows to prove that:
+Then run `validation/03_validate_temporal_recovery.sql`. It uses the manual-change and recovery audit records to prove that:
 
-- the accidental and restorative updates were both audited;
+- the manual and restorative updates were both audited;
 - the current row matches the pre-accident business values;
-- the accidental version remains in temporal history; and
+- the manually changed version remains in temporal history; and
 - no whole-database restore was required.
 
 ## 4. Cleanup
