@@ -1,13 +1,8 @@
--- Run as: sb_manager_daniel.
--- Daniel manages branch B0001; Farid (S00004) is an officer in B0001.
-USE [SmartBankDB];
-GO
-
--- Show the officer details visible to the manager before the update.
+-- show all staff
 EXEC api.usp_ManagerGetStaffProfiles;
 GO
 
--- Update an officer in the manager's own branch through the approved API.
+-- update
 -- @Salary = NULL preserves the officer's existing encrypted salary.
 EXEC api.usp_ManagerUpdateOfficer
     @StaffID = 'S00004',
@@ -17,12 +12,11 @@ EXEC api.usp_ManagerUpdateOfficer
     @Salary = NULL;
 GO
 
--- Show the updated officer details.
+-- show
 EXEC api.usp_ManagerGetStaffProfiles;
 GO
 
--- Optional negative test: execute separately.
--- Expected result: error 50245 because Priya belongs to B0002, not Daniel's branch.
+-- negative test: other branch
 EXEC api.usp_ManagerUpdateOfficer
     @StaffID = 'S00005',
     @StaffName = N'Priya Nair',
