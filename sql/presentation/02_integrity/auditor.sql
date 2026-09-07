@@ -1,0 +1,1 @@
+-- logs find in auditor's stored procedures (NativeAudit)
