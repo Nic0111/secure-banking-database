@@ -56,6 +56,7 @@ GO
 
 -- Remove the demonstration server logins and auditor role.
 IF SUSER_ID(N'sb_dba_aisha') IS NOT NULL DROP LOGIN [sb_dba_aisha];
+IF SUSER_ID(N'sb_dba_kavitha') IS NOT NULL DROP LOGIN [sb_dba_kavitha];
 IF SUSER_ID(N'sb_manager_daniel') IS NOT NULL DROP LOGIN [sb_manager_daniel];
 IF SUSER_ID(N'sb_manager_siti') IS NOT NULL DROP LOGIN [sb_manager_siti];
 IF SUSER_ID(N'sb_officer_farid') IS NOT NULL DROP LOGIN [sb_officer_farid];

@@ -27,7 +27,8 @@ BEGIN
            ('S00004', N'Farid Iskandar', '012-3101004'),
            ('S00005', N'Priya Nair', '012-3101005'),
            ('S00006', N'Lim Jia Wei', '012-3101006'),
-           ('S00007', N'Nur Iman', '012-3101007');
+           ('S00007', N'Nur Iman', '012-3101007'),
+           ('S00009', N'Kavitha Rao', '012-3101009');
 
     INSERT core.StaffEmployment (StaffID, Position, BranchID, SalaryCipher)
     VALUES
@@ -37,7 +38,8 @@ BEGIN
       ('S00004', 'BANK_OFFICER', 'B0001', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5200.00')),
       ('S00005', 'BANK_OFFICER', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5400.00')),
       ('S00006', 'BANK_OFFICER', 'B0003', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5100.00')),
-      ('S00007', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00'));
+      ('S00007', 'BANK_OFFICER', 'B0004', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '5600.00')),
+      ('S00009', 'DBA', 'B0002', EncryptByKey(Key_GUID(N'SmartBank_Column_Key'), '9400.00'));
 
     CLOSE SYMMETRIC KEY SmartBank_Column_Key;
 END;
@@ -133,6 +135,7 @@ GO
 MERGE sec.PrincipalMap AS target
 USING (VALUES
     (CONVERT(sysname, N'sb_dba_aisha'), CONVERT(sysname, N'sb_dba_aisha'), 'DBA', 'S00003', CONVERT(char(6), NULL)),
+    (CONVERT(sysname, N'sb_dba_kavitha'), CONVERT(sysname, N'sb_dba_kavitha'), 'DBA', 'S00009', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_manager_daniel'), CONVERT(sysname, N'sb_manager_daniel'), 'MANAGER', 'S00001', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_manager_siti'), CONVERT(sysname, N'sb_manager_siti'), 'MANAGER', 'S00002', CONVERT(char(6), NULL)),
     (CONVERT(sysname, N'sb_officer_farid'), CONVERT(sysname, N'sb_officer_farid'), 'OFFICER', 'S00004', CONVERT(char(6), NULL)),

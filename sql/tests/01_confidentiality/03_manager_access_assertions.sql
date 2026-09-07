@@ -39,13 +39,21 @@ DECLARE @OtherBranchOfficerID char(6) =
         WHEN N'sb_manager_siti' THEN 'S00004'
     END;
 
--- The DBA is assigned to B0001: Daniel must see the DBA profile, Siti must not.
-IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
-    AND NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
-    THROW 51115, 'FAIL: the manager staff-list procedure omitted the DBA profile.', 1;
+DECLARE @OwnBranchDbaID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00003'
+        WHEN N'sb_manager_siti' THEN 'S00009'
+    END;
+DECLARE @OtherBranchDbaID char(6) =
+    CASE ORIGINAL_LOGIN()
+        WHEN N'sb_manager_daniel' THEN 'S00009'
+        WHEN N'sb_manager_siti' THEN 'S00003'
+    END;
 
-IF ORIGINAL_LOGIN() = N'sb_manager_siti'
-    AND EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = 'S00003' AND Position = 'DBA')
+IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @OwnBranchDbaID AND Position = 'DBA')
+    THROW 51115, 'FAIL: the manager staff-list procedure omitted the own-branch DBA profile.', 1;
+
+IF EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @OtherBranchDbaID)
     THROW 51119, 'FAIL: a manager can view a DBA assigned to another branch.', 1;
 
 IF NOT EXISTS (SELECT 1 FROM #VisibleStaff WHERE StaffID = @OwnBranchOfficerID AND Position = 'BANK_OFFICER')

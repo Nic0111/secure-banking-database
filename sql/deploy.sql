@@ -9,6 +9,7 @@
 :setvar MasterKeyPassword "SBank!MasterKey_2026#LocalOnly"
 :setvar CertificateBackupPassword "SBank!Certificate_2026#LocalOnly"
 :setvar DbaLoginPassword "SBank!Dba_2026#Aisha"
+:setvar DbaKavithaLoginPassword "SBank!Dba_2026#Kavitha"
 :setvar ManagerDanielLoginPassword "SBank!Manager_2026#Daniel"
 :setvar ManagerSitiLoginPassword "SBank!Manager_2026#Siti"
 :setvar OfficerFaridLoginPassword "SBank!Officer_2026#Farid"

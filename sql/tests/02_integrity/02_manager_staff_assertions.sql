@@ -26,40 +26,78 @@ EXEC api.usp_ManagerUpdateOfficer
     @StaffID = @OwnOfficerStaffID, @StaffName = @OwnOfficerName, @Phone = @OwnOfficerPhone,
     @BranchID = @OwnOfficerBranchID, @Salary = @OwnOfficerSalary;
 
+DECLARE @OwnDbaStaffID char(6), @OwnDbaName nvarchar(100),
+        @OwnDbaPhone varchar(20), @OwnDbaBranchID char(5),
+        @OwnDbaSalary decimal(19, 2), @OtherDbaStaffID char(6),
+        @OtherDbaName nvarchar(100), @OtherDbaPhone varchar(20),
+        @OtherDbaBranchID char(5), @OtherDbaSalary decimal(19, 2);
 IF ORIGINAL_LOGIN() = N'sb_manager_daniel'
 BEGIN
-    -- The DBA is assigned to B0001, so Daniel can update the DBA record.
-    EXEC api.usp_ManagerUpdateOfficer
-        @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
-        @BranchID = 'B0001', @Salary = 9200.00;
+    SELECT @OwnDbaStaffID = 'S00003', @OwnDbaName = N'Aisha Rahman',
+           @OwnDbaPhone = '012-3101003', @OwnDbaBranchID = 'B0001', @OwnDbaSalary = 9200.00,
+           @OtherDbaStaffID = 'S00009', @OtherDbaName = N'Kavitha Rao',
+           @OtherDbaPhone = '012-3101009', @OtherDbaBranchID = 'B0002', @OtherDbaSalary = 9400.00;
 END;
 ELSE
 BEGIN
-    -- EXPECTED VALIDATION FAILURE: the DBA is not in Siti's branch.
-    DECLARE @DbaUpdateRejected bit = 0;
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        EXEC api.usp_ManagerUpdateOfficer
-            @StaffID = 'S00003', @StaffName = N'Aisha Rahman', @Phone = '012-3101003',
-            @BranchID = 'B0001', @Salary = 9200.00;
-        ROLLBACK TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF XACT_STATE() <> 0
-            ROLLBACK TRANSACTION;
-
-        IF ERROR_NUMBER() <> 50245
-            THROW;
-
-        SET @DbaUpdateRejected = 1;
-        SELECT N'PASS - DBA update rejected: the DBA is not in the manager own branch' AS Result,
-               ERROR_NUMBER() AS ActualErrorNumber,
-               ERROR_MESSAGE() AS ActualErrorMessage;
-    END CATCH;
-
-    IF @DbaUpdateRejected = 0
-        THROW 51208, 'FAIL: a manager unexpectedly updated the DBA across branches.', 1;
+    SELECT @OwnDbaStaffID = 'S00009', @OwnDbaName = N'Kavitha Rao',
+           @OwnDbaPhone = '012-3101009', @OwnDbaBranchID = 'B0002', @OwnDbaSalary = 9400.00,
+           @OtherDbaStaffID = 'S00003', @OtherDbaName = N'Aisha Rahman',
+           @OtherDbaPhone = '012-3101003', @OtherDbaBranchID = 'B0001', @OtherDbaSalary = 9200.00;
 END;
+
+EXEC api.usp_ManagerUpdateOfficer
+    @StaffID = @OwnDbaStaffID, @StaffName = @OwnDbaName, @Phone = @OwnDbaPhone,
+    @BranchID = @OwnDbaBranchID, @Salary = @OwnDbaSalary;
+
+-- EXPECTED VALIDATION FAILURE: the other DBA belongs to another branch.
+DECLARE @DbaUpdateRejected bit = 0;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    EXEC api.usp_ManagerUpdateOfficer
+        @StaffID = @OtherDbaStaffID, @StaffName = @OtherDbaName, @Phone = @OtherDbaPhone,
+        @BranchID = @OtherDbaBranchID, @Salary = @OtherDbaSalary;
+    ROLLBACK TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+
+    IF ERROR_NUMBER() <> 50245
+        THROW;
+
+    SET @DbaUpdateRejected = 1;
+    SELECT N'PASS - DBA update rejected: the DBA is not in the manager own branch' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @DbaUpdateRejected = 0
+    THROW 51208, 'FAIL: a manager unexpectedly updated the DBA across branches.', 1;
+
+-- EXPECTED VALIDATION FAILURE: managers may maintain an own-branch DBA's
+-- employment record, but only an officer identity can be deactivated here.
+DECLARE @DbaDeactivationRejected bit = 0;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    EXEC api.usp_ManagerDeactivateOfficer @StaffID = @OwnDbaStaffID;
+    ROLLBACK TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+
+    IF ERROR_NUMBER() <> 50216
+        THROW;
+
+    SET @DbaDeactivationRejected = 1;
+    SELECT N'PASS - manager cannot deactivate an own-branch DBA through the officer procedure' AS Result,
+           ERROR_NUMBER() AS ActualErrorNumber,
+           ERROR_MESSAGE() AS ActualErrorMessage;
+END CATCH;
+
+IF @DbaDeactivationRejected = 0
+    THROW 51211, 'FAIL: a manager unexpectedly deactivated an own-branch DBA.', 1;
 
 -- EXPECTED VALIDATION FAILURE: a manager cannot update an officer from another branch.
 DECLARE @OtherOfficerStaffID char(6) =

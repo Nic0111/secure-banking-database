@@ -6,6 +6,7 @@ GO
 DECLARE @ExpectedName nvarchar(100) =
     CASE ORIGINAL_LOGIN()
         WHEN N'sb_dba_aisha' THEN N'Aisha Rahman'
+        WHEN N'sb_dba_kavitha' THEN N'Kavitha Rao'
         WHEN N'sb_manager_daniel' THEN N'Daniel Wong'
         WHEN N'sb_manager_siti' THEN N'Siti Aminah'
         WHEN N'sb_officer_farid' THEN N'Farid Iskandar'
@@ -14,6 +15,7 @@ DECLARE @ExpectedName nvarchar(100) =
 DECLARE @ExpectedPhone varchar(20) =
     CASE ORIGINAL_LOGIN()
         WHEN N'sb_dba_aisha' THEN '012-3101003'
+        WHEN N'sb_dba_kavitha' THEN '012-3101009'
         WHEN N'sb_manager_daniel' THEN '012-3101001'
         WHEN N'sb_manager_siti' THEN '012-3101002'
         WHEN N'sb_officer_farid' THEN '012-3101004'

@@ -1,4 +1,4 @@
--- Run as: sb_dba_aisha.
+-- Run as: sb_dba_aisha or sb_dba_kavitha.
 USE [SmartBankDB];
 GO
 

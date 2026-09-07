@@ -735,6 +735,111 @@ BEGIN
 END;
 GO
 
+-- Let a customer credit money into another customer's account without touching
+-- their own balance - the counter-deposit case (paying into somebody else's
+-- account). The depositor's transaction PIN is validated, the operation is
+-- audited, and the destination account's balance is never disclosed to the
+-- depositor.
+CREATE OR ALTER PROCEDURE api.usp_CustomerDepositToAccount
+    @DestinationAccountID varchar(10),
+    @Amount decimal(19, 2),
+    @TransactionPin varchar(12),
+    @Channel varchar(12) = 'ONLINE'
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @LoginName sysname = ORIGINAL_LOGIN();
+    DECLARE @CustomerID char(6);
+    DECLARE @DestinationCustomerID char(6);
+    DECLARE @CorrelationID uniqueidentifier = NEWID();
+    DECLARE @Salt varbinary(32), @StoredHash varbinary(64), @LockedUntil datetime2(3);
+    DECLARE @CredentialFound bit = 0, @PinValid bit = 0;
+    DECLARE @DestinationBalance decimal(19, 2);
+    DECLARE @NewDestinationBalance decimal(19, 2);
+    DECLARE @Now datetime2(3) = SYSUTCDATETIME();
+    DECLARE @LockResult int;
+    DECLARE @LockResource nvarchar(255);
+
+    BEGIN TRY
+        SELECT @CustomerID = CustomerID
+        FROM sec.PrincipalMap
+        WHERE LoginName = @LoginName AND UserType = 'CUSTOMER' AND IsActive = 1
+          AND (EffectiveTo IS NULL OR EffectiveTo > SYSUTCDATETIME());
+
+        IF @CustomerID IS NULL THROW 50260, 'Only an active customer may deposit money.', 1;
+        IF @Amount <= 0 OR @Amount > 1000000 THROW 50261, 'Amount must be greater than zero and no more than 1,000,000.', 1;
+        IF @Channel NOT IN ('ONLINE', 'ATM', 'MOBILE') THROW 50262, 'Invalid deposit channel.', 1;
+
+        -- PIN verification, identical to api.usp_PerformTransaction.
+        BEGIN TRANSACTION;
+        SELECT @Salt = Salt, @StoredHash = PinHash, @LockedUntil = LockedUntil, @CredentialFound = 1
+        FROM sec.TransactionCredential WITH (UPDLOCK, HOLDLOCK)
+        WHERE LoginName = @LoginName;
+
+        IF @CredentialFound = 1 AND (@LockedUntil IS NULL OR @LockedUntil <= @Now)
+           AND HASHBYTES('SHA2_512', @Salt + CONVERT(varbinary(32), @TransactionPin)) = @StoredHash
+        BEGIN
+            SET @PinValid = 1;
+            UPDATE sec.TransactionCredential SET FailedAttempts = 0, LockedUntil = NULL WHERE LoginName = @LoginName;
+        END
+        ELSE IF @CredentialFound = 1 AND (@LockedUntil IS NULL OR @LockedUntil <= @Now)
+        BEGIN
+            UPDATE sec.TransactionCredential
+            SET FailedAttempts = CASE WHEN FailedAttempts >= 4 THEN 5 ELSE FailedAttempts + 1 END,
+                LockedUntil = CASE WHEN FailedAttempts >= 4 THEN DATEADD(MINUTE, 15, @Now) ELSE NULL END
+            WHERE LoginName = @LoginName;
+        END;
+        COMMIT TRANSACTION;
+
+        IF @CredentialFound = 0 THROW 50236, 'Transaction PIN has not been enrolled.', 1;
+        IF @PinValid = 0 AND @LockedUntil > @Now THROW 50237, 'Transaction PIN is temporarily locked.', 1;
+        IF @PinValid = 0 THROW 50238, 'Invalid transaction PIN.', 1;
+
+        EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = @CorrelationID;
+        BEGIN TRANSACTION;
+
+        SET @LockResource = N'SmartBankAccount:' + @DestinationAccountID;
+        EXEC @LockResult = sys.sp_getapplock
+            @Resource = @LockResource,
+            @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 5000;
+        IF @LockResult < 0 THROW 50263, 'Could not acquire the destination account lock.', 1;
+
+        SELECT @DestinationBalance = Balance, @DestinationCustomerID = CustomerID
+        FROM core.Account WITH (UPDLOCK, HOLDLOCK)
+        WHERE AccountID = @DestinationAccountID AND Status = 'ACTIVE';
+        IF @DestinationBalance IS NULL THROW 50243, 'Destination account is not active or does not exist.', 1;
+
+        SET @NewDestinationBalance = @DestinationBalance + @Amount;
+        SET @Now = SYSUTCDATETIME();
+
+        UPDATE core.Account SET Balance = @NewDestinationBalance WHERE AccountID = @DestinationAccountID;
+        EXEC core.usp_AppendLedgerEntry @CorrelationID, @DestinationCustomerID, @DestinationAccountID, NULL, @Now,
+             @Amount, 'CREDIT', 'DEPOSIT', @NewDestinationBalance, @LoginName, @Channel;
+
+        COMMIT TRANSACTION;
+        EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = NULL;
+
+        EXEC audit.usp_LogApplicationEvent 'CUSTOMER_DEPOSIT', N'api.usp_CustomerDepositToAccount', 1,
+             'ACCOUNT', @DestinationAccountID, @CorrelationID, NULL, N'Customer credited another customer''s account.';
+
+        -- Never disclose the destination account balance to the depositor.
+        SELECT @CorrelationID AS CorrelationID, @DestinationAccountID AS DestinationAccountID,
+               @Amount AS Amount, @Channel AS Channel, N'COMPLETED' AS Status;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        EXEC sys.sp_set_session_context @key = N'CorrelationID', @value = NULL;
+        DECLARE @ErrorNumber int = ERROR_NUMBER(), @ErrorMessage nvarchar(1000) = LEFT(ERROR_MESSAGE(), 1000);
+        EXEC audit.usp_LogApplicationEvent 'CUSTOMER_DEPOSIT', N'api.usp_CustomerDepositToAccount', 0,
+             'ACCOUNT', @DestinationAccountID, @CorrelationID, @ErrorNumber, @ErrorMessage;
+        THROW;
+    END CATCH;
+END;
+GO
+
 -- Verify the transaction hash chain and account balances.
 CREATE OR ALTER PROCEDURE api.usp_VerifyLedgerChain
 WITH EXECUTE AS OWNER

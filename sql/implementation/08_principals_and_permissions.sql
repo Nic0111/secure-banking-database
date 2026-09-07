@@ -7,6 +7,7 @@ GO
 DECLARE @Logins table (LoginName sysname PRIMARY KEY, LoginPassword nvarchar(256));
 INSERT @Logins (LoginName, LoginPassword)
 VALUES (N'sb_dba_aisha', N'$(DbaLoginPassword)'),
+       (N'sb_dba_kavitha', N'$(DbaKavithaLoginPassword)'),
        (N'sb_manager_daniel', N'$(ManagerDanielLoginPassword)'),
        (N'sb_manager_siti', N'$(ManagerSitiLoginPassword)'),
        (N'sb_officer_farid', N'$(OfficerFaridLoginPassword)'),
@@ -60,6 +61,7 @@ GO
 USE [msdb];
 GO
 IF USER_ID(N'sb_dba_aisha') IS NULL CREATE USER [sb_dba_aisha] FOR LOGIN [sb_dba_aisha];
+IF USER_ID(N'sb_dba_kavitha') IS NULL CREATE USER [sb_dba_kavitha] FOR LOGIN [sb_dba_kavitha];
 IF USER_ID(N'sb_manager_daniel') IS NULL CREATE USER [sb_manager_daniel] FOR LOGIN [sb_manager_daniel];
 IF USER_ID(N'sb_manager_siti') IS NULL CREATE USER [sb_manager_siti] FOR LOGIN [sb_manager_siti];
 IF USER_ID(N'sb_officer_farid') IS NULL CREATE USER [sb_officer_farid] FOR LOGIN [sb_officer_farid];
@@ -71,6 +73,7 @@ GO
 
 -- Reconnect persistent msdb users after a reset recreates the logins.
 ALTER USER [sb_dba_aisha] WITH LOGIN = [sb_dba_aisha];
+ALTER USER [sb_dba_kavitha] WITH LOGIN = [sb_dba_kavitha];
 ALTER USER [sb_manager_daniel] WITH LOGIN = [sb_manager_daniel];
 ALTER USER [sb_manager_siti] WITH LOGIN = [sb_manager_siti];
 ALTER USER [sb_officer_farid] WITH LOGIN = [sb_officer_farid];
@@ -82,6 +85,8 @@ GO
 
 GRANT SELECT ON OBJECT::dbo.backupset TO [sb_dba_aisha];
 GRANT SELECT ON OBJECT::dbo.backupmediafamily TO [sb_dba_aisha];
+GRANT SELECT ON OBJECT::dbo.backupset TO [sb_dba_kavitha];
+GRANT SELECT ON OBJECT::dbo.backupmediafamily TO [sb_dba_kavitha];
 DENY SELECT ON OBJECT::dbo.backupset TO [sb_manager_daniel], [sb_manager_siti], [sb_officer_farid], [sb_officer_priya], [sb_customer_amelia], [sb_customer_hafiz], [sb_auditor_noor];
 DENY SELECT ON OBJECT::dbo.backupmediafamily TO [sb_manager_daniel], [sb_manager_siti], [sb_officer_farid], [sb_officer_priya], [sb_customer_amelia], [sb_customer_hafiz], [sb_auditor_noor];
 GO
@@ -101,6 +106,7 @@ IF DATABASE_PRINCIPAL_ID(N'rl_security_auditor') IS NULL CREATE ROLE rl_security
 GO
 
 IF USER_ID(N'sb_dba_aisha') IS NULL CREATE USER [sb_dba_aisha] FOR LOGIN [sb_dba_aisha];
+IF USER_ID(N'sb_dba_kavitha') IS NULL CREATE USER [sb_dba_kavitha] FOR LOGIN [sb_dba_kavitha];
 IF USER_ID(N'sb_manager_daniel') IS NULL CREATE USER [sb_manager_daniel] FOR LOGIN [sb_manager_daniel];
 IF USER_ID(N'sb_manager_siti') IS NULL CREATE USER [sb_manager_siti] FOR LOGIN [sb_manager_siti];
 IF USER_ID(N'sb_officer_farid') IS NULL CREATE USER [sb_officer_farid] FOR LOGIN [sb_officer_farid];
@@ -113,6 +119,8 @@ GO
 -- Assign users to their roles.
 IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_authenticated') AND member_principal_id = USER_ID(N'sb_dba_aisha')) ALTER ROLE rl_authenticated ADD MEMBER [sb_dba_aisha];
 IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_dba') AND member_principal_id = USER_ID(N'sb_dba_aisha')) ALTER ROLE rl_dba ADD MEMBER [sb_dba_aisha];
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_authenticated') AND member_principal_id = USER_ID(N'sb_dba_kavitha')) ALTER ROLE rl_authenticated ADD MEMBER [sb_dba_kavitha];
+IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_dba') AND member_principal_id = USER_ID(N'sb_dba_kavitha')) ALTER ROLE rl_dba ADD MEMBER [sb_dba_kavitha];
 IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_authenticated') AND member_principal_id = USER_ID(N'sb_manager_daniel')) ALTER ROLE rl_authenticated ADD MEMBER [sb_manager_daniel];
 IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_manager') AND member_principal_id = USER_ID(N'sb_manager_daniel')) ALTER ROLE rl_manager ADD MEMBER [sb_manager_daniel];
 IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id = DATABASE_PRINCIPAL_ID(N'rl_authenticated') AND member_principal_id = USER_ID(N'sb_manager_siti')) ALTER ROLE rl_authenticated ADD MEMBER [sb_manager_siti];
@@ -182,6 +190,7 @@ GO
 GRANT EXECUTE ON OBJECT::api.usp_GetMyCustomerProfile TO rl_customer;
 GRANT EXECUTE ON OBJECT::api.usp_SetTransactionPin TO rl_customer;
 GRANT EXECUTE ON OBJECT::api.usp_PerformTransaction TO rl_customer;
+GRANT EXECUTE ON OBJECT::api.usp_CustomerDepositToAccount TO rl_customer;
 GRANT SELECT ON OBJECT::api.vw_MyAccounts TO rl_customer;
 GRANT SELECT ON OBJECT::api.vw_MyTransactions TO rl_customer;
 GRANT SELECT ON OBJECT::api.vw_StaffDirectoryPublic TO rl_customer;

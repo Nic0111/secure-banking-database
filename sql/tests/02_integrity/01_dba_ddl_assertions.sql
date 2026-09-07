@@ -1,4 +1,4 @@
--- Connect as: sb_dba_aisha.
+-- Connect as: sb_dba_aisha or sb_dba_kavitha.
 USE [SmartBankDB];
 GO
 

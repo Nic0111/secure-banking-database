@@ -1,6 +1,7 @@
 -- Set the restored database name and the standard deployment passwords.
 :setvar TargetDatabaseName "SmartBankDB_RestoreDemo"
 :setvar DbaLoginPassword "SBank!Dba_2026#Aisha"
+:setvar DbaKavithaLoginPassword "SBank!Dba_2026#Kavitha"
 :setvar ManagerDanielLoginPassword "SBank!Manager_2026#Daniel"
 :setvar ManagerSitiLoginPassword "SBank!Manager_2026#Siti"
 :setvar OfficerFaridLoginPassword "SBank!Officer_2026#Farid"
@@ -25,6 +26,7 @@ GO
 
 -- Create the standard SmartBank demonstration logins.
 CREATE LOGIN [sb_dba_aisha] WITH PASSWORD = N'$(DbaLoginPassword)', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF, DEFAULT_DATABASE = [$(TargetDatabaseName)];
+CREATE LOGIN [sb_dba_kavitha] WITH PASSWORD = N'$(DbaKavithaLoginPassword)', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF, DEFAULT_DATABASE = [$(TargetDatabaseName)];
 CREATE LOGIN [sb_manager_daniel] WITH PASSWORD = N'$(ManagerDanielLoginPassword)', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF, DEFAULT_DATABASE = [$(TargetDatabaseName)];
 CREATE LOGIN [sb_manager_siti] WITH PASSWORD = N'$(ManagerSitiLoginPassword)', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF, DEFAULT_DATABASE = [$(TargetDatabaseName)];
 CREATE LOGIN [sb_officer_farid] WITH PASSWORD = N'$(OfficerFaridLoginPassword)', CHECK_POLICY = ON, CHECK_EXPIRATION = OFF, DEFAULT_DATABASE = [$(TargetDatabaseName)];
@@ -44,6 +46,7 @@ GO
 USE [$(TargetDatabaseName)];
 GO
 ALTER USER [sb_dba_aisha] WITH LOGIN = [sb_dba_aisha];
+ALTER USER [sb_dba_kavitha] WITH LOGIN = [sb_dba_kavitha];
 ALTER USER [sb_manager_daniel] WITH LOGIN = [sb_manager_daniel];
 ALTER USER [sb_manager_siti] WITH LOGIN = [sb_manager_siti];
 ALTER USER [sb_officer_farid] WITH LOGIN = [sb_officer_farid];
@@ -61,7 +64,7 @@ LEFT JOIN sys.server_principals AS serverLogin
     ON serverLogin.sid = databaseUser.sid
 WHERE databaseUser.name IN
 (
-    N'sb_dba_aisha', N'sb_manager_daniel', N'sb_manager_siti',
+    N'sb_dba_aisha', N'sb_dba_kavitha', N'sb_manager_daniel', N'sb_manager_siti',
     N'sb_officer_farid', N'sb_officer_priya', N'sb_customer_amelia',
     N'sb_customer_hafiz', N'sb_auditor_noor'
 )
