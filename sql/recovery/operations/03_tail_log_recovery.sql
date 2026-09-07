@@ -81,6 +81,12 @@ IF NULLIF(@BackupDirectory, N'') IS NULL OR NULLIF(@Separator, N'') IS NULL
 IF @CurrentDatabaseGuid IS NULL OR @CurrentRecoveryForkGuid IS NULL
     THROW 52306, 'Current database recovery metadata is unavailable.', 1;
 
+-- A failed attempt can leave local temporary tables alive in the same SSMS
+-- session. Remove them so the operation can be rerun after the database state
+-- and the original failure have been corrected.
+DROP TABLE IF EXISTS #AccidentDml;
+DROP TABLE IF EXISTS #LogChain;
+
 CREATE TABLE #AccidentDml
 (
     AuditID bigint NOT NULL PRIMARY KEY,
@@ -371,13 +377,22 @@ DECLARE @TailFile nvarchar(4000) = @BackupDirectory + @Separator +
     N'SmartBankDB_TAIL_' + @TailTimestamp + N'_' +
     CONVERT(nvarchar(36), NEWID()) + N'.trn';
 DECLARE @RestoreStartedAt datetime = GETDATE();
+DECLARE @DatabaseForcedSingleUser bit = 0;
 
 PRINT N'Preflight passed. Capturing tail to: ' + @TailFile;
-BACKUP LOG [SmartBankDB]
-TO DISK = @TailFile
-WITH COPY_ONLY, NORECOVERY, INIT, COMPRESSION, CHECKSUM,
-     ENCRYPTION (ALGORITHM = AES_256, SERVER CERTIFICATE = SmartBank_Backup_Certificate),
-     STATS = 10;
+
+BEGIN TRY
+    -- Both the tail-log backup with NORECOVERY and the in-place restore need
+    -- exclusive ownership. Acquire it only after every read-only preflight and
+    -- media verification has succeeded.
+    ALTER DATABASE [SmartBankDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    SET @DatabaseForcedSingleUser = 1;
+
+    BACKUP LOG [SmartBankDB]
+    TO DISK = @TailFile
+    WITH COPY_ONLY, NORECOVERY, INIT, COMPRESSION, CHECKSUM,
+         ENCRYPTION (ALGORITHM = AES_256, SERVER CERTIFICATE = SmartBank_Backup_Certificate),
+         STATS = 10;
 
 DECLARE @TailSetID int;
 DECLARE @TailStartDate datetime;
@@ -455,6 +470,25 @@ BEGIN
 END;
 CLOSE restore_cursor;
 DEALLOCATE restore_cursor;
+
+    ALTER DATABASE [SmartBankDB] SET MULTI_USER WITH ROLLBACK IMMEDIATE;
+    SET @DatabaseForcedSingleUser = 0;
+END TRY
+BEGIN CATCH
+    -- Avoid leaving a successfully recovered/online database in SINGLE_USER.
+    -- A database still in RESTORING is intentionally left untouched so its
+    -- verified restore chain can be resumed instead of masking the failure.
+    IF CURSOR_STATUS('local', 'restore_cursor') >= 0
+        CLOSE restore_cursor;
+    IF CURSOR_STATUS('local', 'restore_cursor') > -3
+        DEALLOCATE restore_cursor;
+
+    IF @DatabaseForcedSingleUser = 1
+       AND (SELECT state_desc FROM sys.databases WHERE name = @SourceDatabase) = N'ONLINE'
+        ALTER DATABASE [SmartBankDB] SET MULTI_USER WITH ROLLBACK IMMEDIATE;
+
+    THROW;
+END CATCH;
 
 IF (SELECT state_desc FROM sys.databases WHERE name = @SourceDatabase) <> N'ONLINE'
     THROW 52324, 'SmartBankDB did not finish ONLINE.', 1;
