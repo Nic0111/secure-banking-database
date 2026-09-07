@@ -20,18 +20,18 @@
 :setvar DemoTransactionPin "482731"
 
 PRINT N'=== SmartBank secure database deployment ===';
-:r sql/reset.sql
-:r sql/implementation/00_environment.sql
-:r sql/implementation/01_schema.sql
-:r sql/implementation/02_cryptography.sql
-:r sql/implementation/03_row_level_security.sql
-:r sql/implementation/04_audit_tables_and_triggers.sql
-:r sql/implementation/05_api.sql
-:r sql/implementation/06_seed_data.sql
-:r sql/implementation/07_native_audit.sql
-:r sql/implementation/08_principals_and_permissions.sql
-:r sql/implementation/09_backup_automation.sql
-:r sql/implementation/10_static_masking.sql
+:r reset.sql
+:r implementation/00_environment.sql
+:r implementation/01_schema.sql
+:r implementation/02_cryptography.sql
+:r implementation/03_row_level_security.sql
+:r implementation/04_audit_tables_and_triggers.sql
+:r implementation/05_api.sql
+:r implementation/06_seed_data.sql
+:r implementation/07_native_audit.sql
+:r implementation/08_principals_and_permissions.sql
+:r implementation/09_backup_automation.sql
+:r implementation/10_static_masking.sql
 
 PRINT N'=== Deployment completed successfully ===';
 GO
