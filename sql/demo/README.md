@@ -1,6 +1,6 @@
 # SmartBank assignment demonstration
 
-This folder is the presentation layer for the implemented SmartBank security controls. It does not deploy objects and does not replace the automated assertions in `sql/tests`. Each numbered script follows the wording and order of the assignment so that the evidence is easy to trace during marking.
+This folder is the presentation layer for the implemented SmartBank security controls. It does not replace the automated assertions in `sql/tests`. Follow [SSMS_RUNBOOK.md](SSMS_RUNBOOK.md) for presentation order: use SSMS dialogs for administration and restores, and query windows for application operations and validation. Script numbering groups assignment evidence; it is not the complete execution sequence.
 
 ## Before the demonstration
 
@@ -18,10 +18,10 @@ Expected permission and business-rule errors are part of the evidence. Read the 
 |---:|---|---|---|
 | 1 | `00_preflight_and_baseline.sql` | `sa` | Read-only |
 | 2 | `01_confidentiality` in numeric order | The login named in each header | Read-only |
-| 3 | `02_integrity` in numeric order | The login named in each header | Controlled demo changes; some are restored in-script |
-| 4 | `02_integrity/06_all_valid_invalid_manipulations_logged.sql` | `sb_auditor_noor` | Read-only |
-| 5 | Complete the applicable workflow in `sql/recovery/README.md`, then run `03_availability` in numeric order | `sa` | Recovery is performed and validated in `sql/recovery`; the demo scripts present condensed evidence |
-| 6 | `90_permission_change_extension.sql` | `sa` | Reversible user/role/permission change |
+| 3 | Integrity `01`, `02`, new-login dialog plus remaining `07` mapping, then `03`–`05` | The login named in the runbook | Controlled demo changes |
+| 4 | Optional `90_permission_change_extension.sql`, then integrity `06` once | `sa`, then `sb_auditor_noor` | Reversible permission example, followed by audit evidence |
+| 5 | Backup-job dialogs, then availability `02` and `03` | `sa` on primary | Read-only evidence |
+| 6 | Encrypted restore/validation on second instance; PITR dialog/validation on primary; optional one-file in-place tail-log recovery on primary; temporal scenario/validation | `sa` on the specified instance | Follow the exact GUI and query steps in `SSMS_RUNBOOK.md` |
 | 7 | `99_consolidated_evidence.sql` | `sa` | Read-only |
 
 After a full demonstration, restore the golden baseline before repeating it. This removes the deliberately opened test account and the appended transaction evidence while retaining a predictable starting state.

@@ -1,4 +1,4 @@
--- Run as: sa (server administrator).
+-- Run as: sa.
 -- Wires the SQL login for the officer record the manager hired in
 -- 02_manager_manages_staff.sql. Run that script as sb_manager_daniel first.
 USE [master];

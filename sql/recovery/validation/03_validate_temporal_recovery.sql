@@ -67,6 +67,25 @@ ORDER BY EventTime DESC, AuditID DESC;
 SELECT @CurrentName = CustomerName, @CurrentEmail = Email, @CurrentStatus = Status
 FROM core.Customer WHERE CustomerID = 'C00012';
 
+IF @AccidentAuditID IS NULL
+    THROW 52443, 'The manual change audit record was not found.', 1;
+
+IF ISNULL(@CurrentName, N'') <> ISNULL(@OriginalName, N'')
+   OR ISNULL(@CurrentEmail, '') <> ISNULL(@OriginalEmail, '')
+   OR ISNULL(@CurrentStatus, '') <> ISNULL(@OriginalStatus, '')
+    THROW 52444, 'The current customer row does not match the version before the manual change.', 1;
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM core.Customer FOR SYSTEM_TIME ALL
+    WHERE CustomerID = 'C00012'
+      AND ISNULL(CustomerName, N'') = ISNULL(@AccidentalName, N'')
+      AND ISNULL(Email, '') = ISNULL(@AccidentalEmail, '')
+      AND ISNULL(Status, '') = ISNULL(@AccidentalStatus, '')
+)
+    THROW 52445, 'The manually changed version was not retained in temporal history.', 1;
+
 SELECT N'PASS' AS ValidationResult,
        @CorrelationID AS CorrelationID,
        @AccidentAuditID AS AccidentAuditID,

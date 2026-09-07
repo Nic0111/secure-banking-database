@@ -1,27 +1,16 @@
 # SmartBank recovery module
 
-This module contains executable recovery workflows for the assignment's availability requirements. It proves that encrypted backups are usable, accidental changes can be recovered to a chosen point in time, row-level mistakes can be repaired from temporal history, and each result can be validated independently.
+All scripts must be run as `sa`.
 
-The folders deliberately separate responsibilities:
+For the presentation, follow [the SSMS-first runbook](../demo/SSMS_RUNBOOK.md). It uses Restore Database dialogs for encrypted full restore and PITR, with SQL for certificate preparation, scenario markers and validation. The full operation scripts below are alternative scripted workflows; do not execute them after completing the same restore through a dialog.
 
-| Folder | Responsibility | Normal data effect |
-|---|---|---|
-| `operations` | Privileged restore mechanics | Creates a separate restored database |
-| `scenarios` | Controlled accidental-change drills | Changes demonstration data and then captures/reverses it as stated |
-| `validation` | Read-only acceptance evidence | None |
-| `utilities` | Explicit maintenance | Drops only named validation databases after confirmation |
-
-All scripts must be run as `sa` or another `sysadmin`. Do not run recovery operations through an application login. SQL Server Agent must be running for the scheduled five-minute RPO evidence, although the scenario scripts also capture explicit log backups to close a deterministic demonstration chain.
-
-## 1. Cross-instance encrypted full restore
+## 1. Encrypted full restore
 
 Copy the following to directories readable by the second SQL Server service account:
 
 - The selected encrypted full `.bak` file.
 - `SmartBank_TDE_Certificate.cer` and `SmartBank_TDE_Certificate.pvk`.
 - `SmartBank_Backup_Certificate.cer` and `SmartBank_Backup_Certificate.pvk`.
-
-Keep certificate/private-key media separate from database backup media outside this isolated coursework environment.
 
 Run `operations/01_restore_encrypted_full.sql` on the second instance in SQLCMD mode. Supply every variable externally:
 
@@ -37,20 +26,18 @@ sqlcmd -S "<second-instance>" -U sa -P "<sa-password>" -C -b -i "sql/recovery/va
 
 The validation requires an ONLINE restored database, TDE, a service-master-key-protected database master key, non-empty core data, successful column decryption without displaying PII, `DBCC CHECKDB`, a valid transaction hash chain and reconciled account balances.
 
-The backup contains database users and their role memberships, but SQL Server logins are server-level objects and are not included. To demonstrate the restored database through the standard SmartBank logins, run `utilities/03_restore_demo_logins.sql` once on a clean target instance:
+To demonstrate the restored database through the standard SmartBank logins, run `utilities/03_restore_demo_logins.sql` once on a clean target instance:
 
 ```powershell
 sqlcmd -S "<second-instance>" -U sa -P "<sa-password>" -C -b -i "sql/recovery/utilities/03_restore_demo_logins.sql"
 ```
 
-The script already contains the same demonstration passwords as `deploy.sql`. Change `TargetDatabaseName` at its top if required. It creates new target-server login SIDs and maps the restored database users to them; it does not alter restored data or permissions. Do not rerun it where those logins already exist.
-
-## 2. Point-in-time recovery drill
+## 2. PITR
 
 Run the following on the primary instance in this exact order:
 
 1. `scenarios/01_pitr_capture_marker.sql` captures a pre-accident log backup and both UTC and SQL Server-local marker times. The marker applies to the entire database.
-2. Ask the lecturer to update or delete one or two records in an audited business or demo table. Record the schema, table and key so the same rows can be shown after recovery. The safe fallback is:
+2. Update or delete one or two records in an audited business or demo table. Record the schema, table and key so the same rows can be shown after recovery. The safe fallback is:
 
    ```sql
    DELETE SmartBankDB.demo.RecoveryTarget WHERE RecoveryID = 1;
@@ -61,9 +48,21 @@ Run the following on the primary instance in this exact order:
 4. `operations/02_restore_point_in_time.sql` selects the eligible full backup, optional differential and ordered log chain from `msdb`, verifies every selected medium, and restores a separate `SmartBankDB_PITR` database using `STOPAT`.
 5. `validation/02_validate_pitr_restore.sql` checks the recovered copy's TDE encryption, integrity, ledger chain and account balances, and shows the audited source change. Use `sql/demo/03_availability/01_accidental_changes_recoverable.sql` to compare the exact live and recovered records selected in step 2.
 
-The source database remains online throughout the restore because recovery targets a separate database. The scheduled five-minute transaction-log interval defines the normal-operation RPO; the explicit pre/post log backups make the classroom drill deterministic and do not replace the schedule.
+The source database remains online throughout the restore because recovery targets a separate database. The scheduled five-minute transaction-log interval defines the normal-operation RPO.
 
-## 3. Temporal row-recovery drill
+## 3. Tail-log recovery drill
+
+This optional drill restores the primary `SmartBankDB` in place, using its existing scheduled backup history. Finish other demonstrations first and rehearse it on an equivalent non-production instance.
+
+1. Close other `SmartBankDB` sessions. Through any normal role or `sa`, manually perform one permitted audited `INSERT`, `UPDATE` or `DELETE`, display its effect, then disconnect that query. Any table covered by `audit.DmlAudit` is eligible.
+2. Within two minutes, run the entire `operations/03_tail_log_recovery.sql` file once as primary `sa`.
+3. Require PASS and inspect the discovered DML transaction, selected chain and restore history. The discovered transaction must be absent after recovery and the final selected backup must be the exact tail with `STOPAT + RECOVERY`.
+
+The single operation performs all preflight, media verification, encrypted tail capture, full/differential/log restore and validation. Its initial target is SQL Server time minus two minutes. It dynamically discovers the latest DML audit row and all audit rows sharing its actor and database transaction; procedure-level application metadata is included when a correlation ID exists but is not required. When a scheduled log ended inside the recovery window, the operation can move the target just after that log only while remaining before the audited change; otherwise it stops before tail capture. The manual destructive action is intentionally absent from the recovery SQL.
+
+The online-database tail uses `NORECOVERY`; `NO_TRUNCATE` is reserved for an offline or damaged database. The operation overwrites `SmartBankDB`, so it also discards other legitimate work after `STOPAT`. If a failure occurs after tail capture, the database can remain in `RESTORING`; retain the reported media and repair the restore sequence rather than redeploying.
+
+## 4. Temporal row-recovery
 
 Run Step 1 of `scenarios/03_temporal_row_recovery.sql` on the primary instance, keep that SSMS window open, let the lecturer manually update customer `C00012` in another window, then run Step 2. The script retrieves the version at its saved pre-change time with `FOR SYSTEM_TIME AS OF` and restores all customer columns.
 
@@ -74,23 +73,10 @@ Then run `validation/03_validate_temporal_recovery.sql`. It uses the manual-chan
 - the manually changed version remains in temporal history; and
 - no whole-database restore was required.
 
-## 4. Cleanup
+## 5. Cleanup
 
 Cleanup is intentionally separate and confirmation-gated. Review the target names first, then run:
 
 ```powershell
 sqlcmd -S "<instance>" -U sa -P "<sa-password>" -C -b -i "sql/recovery/utilities/01_cleanup_validation_databases.sql" -v ConfirmCleanup="DROP_RECOVERY_VALIDATION_DATABASES" PitrDatabaseName="SmartBankDB_PITR" RestoreValidationDatabaseName="SmartBankDB_RestoreDemo"
 ```
-
-The utility rejects `SmartBankDB`, `SmartBankAnalyticsDB`, `master`, `model`, `msdb` and `tempdb`, and accepts only target names beginning with `SmartBankDB_`. It does not delete backup files, certificates, recovery markers or audit records.
-
-## Acceptance summary
-
-| Requirement evidence | Script |
-|---|---|
-| Encrypted full backup is genuinely restorable | `operations/01_restore_encrypted_full.sql` + `validation/01_validate_encrypted_full_restore.sql` |
-| Broad accidental change is recoverable | PITR scenario + operation + validation |
-| Recovery point can be selected within the log chain | `operations/02_restore_point_in_time.sql` |
-| Small accidental row change is efficiently recoverable | Temporal scenario + validation |
-| Recovery activity and manipulated rows are auditable | Scenario and validation queries against `audit.DmlAudit` |
-| Recovery does not overwrite the active database | Both restore operations create explicitly named validation databases |
