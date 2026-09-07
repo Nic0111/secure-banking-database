@@ -722,8 +722,7 @@ BEGIN
 
         SELECT @CorrelationID AS CorrelationID, @TransactionType AS TransactionType,
                @SourceAccountID AS SourceAccountID, @DestinationAccountID AS DestinationAccountID,
-               @Amount AS Amount, @NewSourceBalance AS SourceBalanceAfter,
-               @NewDestinationBalance AS DestinationBalanceAfter;
+               @Amount AS Amount, @NewSourceBalance AS SourceBalanceAfter;
     END TRY
     BEGIN CATCH
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
